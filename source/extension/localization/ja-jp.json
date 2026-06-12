@@ -8,6 +8,7 @@
     "join_room_button": "参加",
     "help_room_button": "ヘルプ",
     "voice_call_button": "通話",
+    "end_voice_call_button": "通話を終了",
     "exit_room_button": "退出",
     "host_role": "ホスト",
     "memeber_role": "メンバー",

@@ -760,12 +760,20 @@
             let callBtn = select("#callBtn");
             let callConnecting = select("#callConnecting");
             let callErrorBtn = select("#callErrorBtn");
-            dsply(callConnecting, s == VoiceStatus.CONNECTTING);
-            dsply(callBtn, s == VoiceStatus.STOP);
             let inCall = (VoiceStatus.UNMUTED == s || VoiceStatus.MUTED == s);
+            dsply(callConnecting, s == VoiceStatus.CONNECTTING);
+            dsply(callBtn, s == VoiceStatus.STOP || inCall);
             dsply(micBtn, inCall);
             dsply(audioBtn, inCall);
             dsply(callErrorBtn, s == VoiceStatus.ERROR);
+            // 通話鈕做成切換：通話中顯示「結束通話」並可掛斷
+            if (callBtn) {
+                let callBtnLabel = callBtn.querySelector('span');
+                if (callBtnLabel) {
+                    callBtnLabel.textContent = inCall ? '{$end_voice_call_button$}' : '{$voice_call_button$}';
+                }
+                callBtn.classList.toggle('vt-btn-callactive', inCall);
+            }
             switch (s) {
                 case VoiceStatus.STOP:
                     break;
@@ -1427,7 +1435,13 @@
                 this.roomButtonGroup = wrapper.querySelector('#roomButtonGroup');
                 this.exitButton = wrapper.querySelector("#videoTogetherExitButton");
                 this.callBtn = wrapper.querySelector("#callBtn");
-                this.callBtn.onclick = () => Voice.join("", window.videoTogetherExtension.roomName);
+                this.callBtn.onclick = () => {
+                    if (Voice.inCall) {
+                        Voice.stop();
+                    } else {
+                        Voice.join("", window.videoTogetherExtension.roomName);
+                    }
+                };
                 this.helpButton = wrapper.querySelector("#videoTogetherHelpButton");
                 this.audioBtn = wrapper.querySelector("#audioBtn");
                 this.micBtn = wrapper.querySelector("#micBtn");

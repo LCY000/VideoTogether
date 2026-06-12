@@ -8,6 +8,7 @@
     "join_room_button": "加入",
     "help_room_button": "說明",
     "voice_call_button": "通話",
+    "end_voice_call_button": "結束通話",
     "exit_room_button": "退出",
     "host_role": "房主（控制中）",
     "memeber_role": "觀眾（跟隨）",

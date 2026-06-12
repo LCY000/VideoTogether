@@ -8,6 +8,7 @@
     "join_room_button": "Join",
     "help_room_button": "Help",
     "voice_call_button": "Call",
+    "end_voice_call_button": "End call",
     "exit_room_button": "Exit",
     "host_role": "Host",
     "memeber_role": "Member",
