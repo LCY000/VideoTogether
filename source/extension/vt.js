@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         AniméSync 一起看
-// @namespace    https://github.com/CYouuu/Anime1sync
+// @name         Video Together 一起看视频
+// @namespace    https://2gether.video/
 // @version      {{timestamp}}
-// @description  和朋友同步看影片，附文字聊天與清楚的在場/控制狀態。Based on VideoTogether (MIT).
-// @author       AniméSync
+// @description  Watch video together 一起看视频
+// @author       maggch@outlook.com
 // @match        *://*/*
 // @icon         https://2gether.video/icon/favicon-32x32.png
 // @grant        none
@@ -765,6 +765,7 @@
             dsply(callBtn, s == VoiceStatus.STOP || inCall);
             dsply(micBtn, inCall);
             dsply(audioBtn, inCall);
+            dsply(select('#videoTogetherHelpButton'), !inCall); // 通話中：說明讓位給音量/靜音
             dsply(callErrorBtn, s == VoiceStatus.ERROR);
             // 通話鈕做成切換：通話中顯示「結束通話」並可掛斷
             if (callBtn) {
@@ -1758,7 +1759,7 @@
 
         InitTheme() {
             let saved = null;
-            try { saved = localStorage.getItem("AnimeSyncTheme"); } catch (e) { }
+            try { saved = localStorage.getItem("VideoTogetherTheme"); } catch (e) { }
             if (saved === "light" || saved === "dark") {
                 this.shadowWrapper.setAttribute("data-vt-theme", saved);
             } else {
@@ -1774,7 +1775,7 @@
             }
             const next = cur === "dark" ? "light" : "dark";
             this.shadowWrapper.setAttribute("data-vt-theme", next);
-            try { localStorage.setItem("AnimeSyncTheme", next); } catch (e) { }
+            try { localStorage.setItem("VideoTogetherTheme", next); } catch (e) { }
         }
 
         Init() {
@@ -1850,10 +1851,10 @@
             msg = msg.replace(/^Error:\s*/i, "");
             // 上游公用伺服器無 zh-tw 在地化、會回英文錯誤 → 在客戶端翻成繁中
             const vtErrMap = {
-                "Wrong Password": "密碼錯誤",
-                "Room exists, wrong password": "房間已存在，密碼錯誤",
-                "Room Not Exists": "房間不存在",
-                "Other Host Is Syncing": "其他房主正在同步",
+                "Wrong Password": "{$err_wrong_password$}",
+                "Room exists, wrong password": "{$err_room_exists_wrong_password$}",
+                "Room Not Exists": "{$err_room_not_exists$}",
+                "Other Host Is Syncing": "{$err_other_host_syncing$}",
             };
             if (vtErrMap[msg]) { msg = vtErrMap[msg]; }
             // 用 data-vt-status 交給 CSS 著色（跟隨主題色票：成功=藍、資訊=灰、錯誤=警示）
