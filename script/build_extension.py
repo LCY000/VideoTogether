@@ -25,6 +25,7 @@ languages = {
     'zh-cn': './source/extension/localization/zh-cn.json',
     'en-us': './source/extension/localization/en-us.json',
     'ja-jp': './source/extension/localization/ja-jp.json',
+    'zh-tw': './source/extension/localization/zh-tw.json',
 }
 
 usedLocalizationKeys = {

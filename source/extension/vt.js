@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Video Together 一起看视频
-// @namespace    https://2gether.video/
+// @name         AniméSync 一起看
+// @namespace    https://github.com/CYouuu/Anime1sync
 // @version      {{timestamp}}
-// @description  Watch video together 一起看视频
-// @author       maggch@outlook.com
+// @description  和朋友同步看影片，附文字聊天與清楚的在場/控制狀態。Based on VideoTogether (MIT).
+// @author       AniméSync
 // @match        *://*/*
 // @icon         https://2gether.video/icon/favicon-32x32.png
 // @grant        none
@@ -359,7 +359,8 @@
 
     function changeMemberCount(c) {
         extension.ctxMemberCount = c;
-        updateInnnerHTML(select('#memberCount'), String.fromCodePoint("0x1f465") + " " + c)
+        const icon = '<svg class="vt-mc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+        updateInnnerHTML(select('#memberCount'), icon + '<span class="vt-mc-num">' + c + '</span>')
     }
 
     function dsply(e, _show = true) {
@@ -1279,7 +1280,7 @@
                         }
                         expanded = !expanded;
                     }
-                    closeBtn.onclick = () => { shadowWrapper.style.display = "none"; }
+                    closeBtn.onclick = () => { container.style.opacity = "0"; container.style.pointerEvents = "none"; }
                     wrapper.getElementById('expand-button').addEventListener('click', () => expand());
                     sendBtn.onclick = () => {
                         extension.currentSendingMsgId = generateUUID();
@@ -1296,12 +1297,67 @@
                             sendBtn.click();
                         }
                     });
+                    // 顏文字快速送出（配合彈幕）
+                    wrapper.querySelectorAll('.vt-emoji').forEach(btn => {
+                        btn.onclick = () => {
+                            extension.currentSendingMsgId = generateUUID();
+                            sendMessageToTop(MessageType.SendTxtMsg, { currentSendingMsgId: extension.currentSendingMsgId, value: btn.textContent });
+                        };
+                    });
+                    // 可自由拖動（拖左側握把）：用 transform translate 相對位移，與定位脈絡無關，
+                    // 不會因全螢幕元素的 containing block 不同而飛到角落
+                    let dragHandle = wrapper.getElementById('drag-handle');
+                    if (dragHandle) {
+                        let vtDragX = 0, vtDragY = 0;
+                        dragHandle.addEventListener('mousedown', (e) => {
+                            let startX = e.clientX, startY = e.clientY;
+                            let baseX = vtDragX, baseY = vtDragY;
+                            const onMove = (ev) => {
+                                vtDragX = baseX + (ev.clientX - startX);
+                                vtDragY = baseY + (ev.clientY - startY);
+                                container.style.transform = "translate(" + vtDragX + "px, " + vtDragY + "px)";
+                            };
+                            const onUp = () => {
+                                document.removeEventListener('mousemove', onMove);
+                                document.removeEventListener('mouseup', onUp);
+                            };
+                            document.addEventListener('mousemove', onMove);
+                            document.addEventListener('mouseup', onUp);
+                            e.preventDefault();
+                        });
+                    }
+                    // 3 秒無動作淡出、滑鼠移動再現（取代原本叉叉永久隱藏）
+                    let vtIdleTimer = null;
+                    const showBar = () => {
+                        container.style.opacity = "1";
+                        container.style.pointerEvents = "auto";
+                        clearTimeout(vtIdleTimer);
+                        if (this.fullscreenWrapper && this.fullscreenWrapper.activeElement === msgInput) {
+                            return; // 打字中不淡出
+                        }
+                        vtIdleTimer = setTimeout(() => {
+                            container.style.opacity = "0";
+                            container.style.pointerEvents = "none";
+                        }, 2500);
+                    };
+                    msgInput.addEventListener("focus", () => { clearTimeout(vtIdleTimer); container.style.opacity = "1"; });
+                    msgInput.addEventListener("blur", () => showBar());
+                    msgInput.addEventListener("keyup", () => { clearTimeout(vtIdleTimer); });
+                    container.addEventListener("mousemove", showBar);
+                    this.fsIdleEl = document.fullscreenElement;
+                    this.fsIdleHandler = showBar;
+                    this.fsIdleEl.addEventListener("mousemove", showBar);
+                    this.clearFsIdle = () => { clearTimeout(vtIdleTimer); };
+                    showBar();
                 } else {
                     if (this.fullscreenSWrapper != undefined) {
                         this.fullscreenSWrapper.remove();
                         this.fullscreenSWrapper = undefined;
                         this.fullscreenWrapper = undefined;
                         GotTxtMsgCallback = undefined;
+                        try { if (this.fsIdleEl && this.fsIdleHandler) { this.fsIdleEl.removeEventListener("mousemove", this.fsIdleHandler); } } catch (e) { }
+                        try { if (this.clearFsIdle) { this.clearFsIdle(); } } catch (e) { }
+                        this.fsIdleEl = undefined; this.fsIdleHandler = undefined;
                     }
                 }
             }, 500);
@@ -1326,6 +1382,22 @@
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
                 wrapper.querySelector("#videoTogetherMaximize").onclick = () => { this.Maximize() }
+                let vtThemeBtn = wrapper.querySelector("#vtThemeToggle");
+                if (vtThemeBtn) { vtThemeBtn.onclick = () => { this.ToggleTheme() } }
+                this.InitTheme();
+                // 視窗太小時自動收成小圖示，避免佔掉僅剩的畫面；視窗變大再自動展開（只在自動收起時）
+                let autoCollapse = () => {
+                    let tooSmall = window.innerWidth < 720 || window.innerHeight < 560;
+                    if (tooSmall && !this.minimized) {
+                        this.Minimize(true);
+                        this.autoMinimized = true;
+                    } else if (!tooSmall && this.autoMinimized && this.minimized) {
+                        this.Maximize(true);
+                        this.autoMinimized = false;
+                    }
+                };
+                window.addEventListener("resize", autoCollapse);
+                autoCollapse();
                 ["", "webkit"].forEach(prefix => {
                     document.addEventListener(prefix + "fullscreenchange", (event) => {
                         if (document.fullscreenElement || document.webkitFullscreenElement) {
@@ -1670,6 +1742,27 @@
             localStorage.setItem("VideoTogetherMinimizedHere", minimized ? 1 : 0)
         }
 
+        InitTheme() {
+            let saved = null;
+            try { saved = localStorage.getItem("AnimeSyncTheme"); } catch (e) { }
+            if (saved === "light" || saved === "dark") {
+                this.shadowWrapper.setAttribute("data-vt-theme", saved);
+            } else {
+                this.shadowWrapper.removeAttribute("data-vt-theme");
+            }
+        }
+
+        ToggleTheme() {
+            let cur = this.shadowWrapper.getAttribute("data-vt-theme");
+            if (!cur) {
+                // 目前跟隨系統：先算出實際呈現的色系再翻轉
+                cur = (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+            }
+            const next = cur === "dark" ? "light" : "dark";
+            this.shadowWrapper.setAttribute("data-vt-theme", next);
+            try { localStorage.setItem("AnimeSyncTheme", next); } catch (e) { }
+        }
+
         Init() {
             let VideoTogetherMinimizedHere = localStorage.getItem("VideoTogetherMinimizedHere");
             if (VideoTogetherMinimizedHere == 0) {
@@ -1738,8 +1831,38 @@
         }
 
         UpdateStatusText(text, color) {
-            updateInnnerHTML(this.statusText, text);
-            this.statusText.style.color = color;
+            // 取訊息字串並去掉 "Error:" 前綴，避免把整個 Error 物件秀出來
+            let msg = (text && text.message) ? text.message : ("" + text);
+            msg = msg.replace(/^Error:\s*/i, "");
+            // 上游公用伺服器無 zh-tw 在地化、會回英文錯誤 → 在客戶端翻成繁中
+            const vtErrMap = {
+                "Wrong Password": "密碼錯誤",
+                "Room exists, wrong password": "房間已存在，密碼錯誤",
+                "Room Not Exists": "房間不存在",
+                "Other Host Is Syncing": "其他房主正在同步",
+            };
+            if (vtErrMap[msg]) { msg = vtErrMap[msg]; }
+            // 用 data-vt-status 交給 CSS 著色（跟隨主題色票：成功=藍、資訊=灰、錯誤=警示）
+            const vtSoftInfo = ["{$no_video_in_this_page$}", "{$video_not_supported$}"];
+            let status = "";
+            if (msg === "") {
+                status = "";
+            } else if (vtSoftInfo.indexOf(msg) !== -1) {
+                status = "info"; // 「還沒偵測到影片」不是錯誤
+            } else if (color === "red") {
+                status = "error";
+            } else if (color === "green") {
+                status = "ok";
+            } else {
+                status = "info";
+            }
+            updateInnnerHTML(this.statusText, msg);
+            this.statusText.style.color = "";
+            this.statusText.setAttribute("data-vt-status", status);
+            // 有錯誤時不該再顯示「正在連線文字聊天伺服器…」等聊天介面
+            if (status === "error") {
+                try { this.setTxtMsgInterface(0); } catch (e) { }
+            }
         }
     }
 
@@ -2557,7 +2680,7 @@
                         if (this.waitForLoadding) {
                             this.UpdateStatusText("{$wait_for_memeber_loadding$}", "red");
                         } else {
-                            _this.UpdateStatusText("{$sync_success$} " + _this.GetDisplayTimeText(), "green");
+                            _this.UpdateStatusText("{$sync_success$}", "green");
                         }
                     } catch (e) {
                         this.UpdateStatusText(e, "red");
@@ -3005,6 +3128,7 @@
             window.videoTogetherFlyPannel.inputRoomPassword.value = "";
             this.roomName = "";
             this.setRole(this.RoleEnum.Null);
+            window.videoTogetherFlyPannel.UpdateStatusText("", "");
             window.videoTogetherFlyPannel.InLobby();
             let state = this.GetRoomState("");
             sendMessageToTop(MessageType.SetTabStorage, state);
@@ -3527,7 +3651,7 @@
             if (isNaN(videoDom.duration)) {
                 throw new Error("{$need_to_play_manually$}");
             }
-            sendMessageToTop(MessageType.UpdateStatusText, { text: "{$sync_success$} " + this.GetDisplayTimeText(), color: "green" });
+            sendMessageToTop(MessageType.UpdateStatusText, { text: "{$sync_success$}", color: "green" });
 
             setTimeout(() => {
                 try {
@@ -3654,45 +3778,43 @@
 
                 target.videoTogetherMoving = true;
 
-                if (e.clientX) {
-                    target.oldX = e.clientX;
-                    target.oldY = e.clientY;
-                } else {
-                    target.oldX = e.touches[0].clientX;
-                    target.oldY = e.touches[0].clientY;
-                }
+                // 以「距右下角」定位（right/bottom），清掉 top/left：
+                // 1) 視窗縮放時面板仍貼著右下角、不會飄到畫面中間
+                // 2) 只設 bottom、不設 top → height:auto 不會被上下撐開變形（不需鎖高度）
+                let r = target.getBoundingClientRect();
+                let vw = document.documentElement.clientWidth;
+                let vh = document.documentElement.clientHeight;
+                target.style.top = "auto";
+                target.style.left = "auto";
+                target.startRight = Math.max(0, vw - r.right);
+                target.startBottom = Math.max(0, vh - r.bottom);
+                target.style.right = target.startRight + "px";
+                target.style.bottom = target.startBottom + "px";
 
-                target.oldLeft = window.getComputedStyle(target).getPropertyValue('left').split('px')[0] * 1;
-                target.oldTop = window.getComputedStyle(target).getPropertyValue('top').split('px')[0] * 1;
+                let p = (e.clientX != undefined) ? e : e.touches[0];
+                target.oldX = p.clientX;
+                target.oldY = p.clientY;
 
                 document.onmousemove = dr;
                 document.ontouchmove = dr;
                 document.onpointermove = dr;
 
                 function dr(event) {
-
                     if (!target.videoTogetherMoving) {
                         return;
                     }
                     event.preventDefault();
                     event.stopPropagation();
-                    if (event.clientX) {
-                        target.distX = event.clientX - target.oldX;
-                        target.distY = event.clientY - target.oldY;
-                    } else {
-                        target.distX = event.touches[0].clientX - target.oldX;
-                        target.distY = event.touches[0].clientY - target.oldY;
-                    }
-
-                    target.style.left = Math.min(document.documentElement.clientWidth - target.clientWidth, Math.max(0, target.oldLeft + target.distX)) + "px";
-                    target.style.top = Math.min(document.documentElement.clientHeight - target.clientHeight, Math.max(0, target.oldTop + target.distY)) + "px";
-
-                    window.addEventListener('resize', function (event) {
-                        target.oldLeft = window.getComputedStyle(target).getPropertyValue('left').split('px')[0] * 1;
-                        target.oldTop = window.getComputedStyle(target).getPropertyValue('top').split('px')[0] * 1;
-                        target.style.left = Math.min(document.documentElement.clientWidth - target.clientWidth, Math.max(0, target.oldLeft)) + "px";
-                        target.style.top = Math.min(document.documentElement.clientHeight - target.clientHeight, Math.max(0, target.oldTop)) + "px";
-                    });
+                    let q = (event.clientX != undefined) ? event : event.touches[0];
+                    let vw2 = document.documentElement.clientWidth;
+                    let vh2 = document.documentElement.clientHeight;
+                    let newRight = target.startRight - (q.clientX - target.oldX);
+                    let newBottom = target.startBottom - (q.clientY - target.oldY);
+                    let EDGE = 16; // 與視窗邊緣保留間隔，拖到角落也不貼死
+                    newRight = Math.max(EDGE, Math.min(vw2 - target.offsetWidth - EDGE, newRight));
+                    newBottom = Math.max(EDGE, Math.min(vh2 - target.offsetHeight - EDGE, newBottom));
+                    target.style.right = newRight + "px";
+                    target.style.bottom = newBottom + "px";
                 }
 
                 function endDrag() {
