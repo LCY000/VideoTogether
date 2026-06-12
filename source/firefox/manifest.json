@@ -38,6 +38,7 @@
         "vt.en-us.user.js",
         "vt.ja-jp.user.js",
         "vt.zh-cn.user.js",
+        "vt.zh-tw.user.js",
         "preInjected.js"
     ],
     "permissions": [

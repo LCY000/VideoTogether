@@ -171,7 +171,7 @@
     }
 
 
-    const languages = ['en-us', 'zh-cn', 'ja-jp'];
+    const languages = ['en-us', 'zh-cn', 'ja-jp', 'zh-tw'];
     let language = 'en-us';
     let settingLanguage = undefined;
     try {
