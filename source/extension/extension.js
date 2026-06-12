@@ -185,6 +185,9 @@
         settingLanguage = settingLanguage.toLowerCase();
         if (languages.includes(settingLanguage)) {
             language = settingLanguage;
+        } else if (settingLanguage.split('-')[0] === 'zh') {
+            // 中文再細分:繁體（tw/hk/mo/hant）對到 zh-tw,其餘（cn/sg/hans…）對到 zh-cn
+            language = /(^|-)(tw|hk|mo|hant)(-|$)/.test(settingLanguage) ? 'zh-tw' : 'zh-cn';
         } else {
             const settingLanguagePrefix = settingLanguage.split('-')[0];
             for (let i = 0; i < languages.length; i++) {
