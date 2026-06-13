@@ -85,12 +85,12 @@
   <div class="vt-modal-content">
 
     <div class="vt-modal-body">
+      <div id="vtStatusBar">
+        <span id="memberCount"></span>
+        <span id="videoTogetherRoleText"></span>
+      </div>
+      <div id="videoTogetherStatusText" style="min-height: 22.5px;">{$global_notification$}</div>
       <div id="mainPannel" class="content">
-        <div id="vtStatusBar">
-          <span id="memberCount"></span>
-          <span id="videoTogetherRoleText"></span>
-        </div>
-        <div id="videoTogetherStatusText" style="min-height: 22.5px;">{$global_notification$}</div>
         <div class="vt-field" style="margin-bottom: 8px;">
           <span class="ellipsis" id="videoTogetherRoomNameLabel">{$room_input_lable$}</span>
           <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="{$room_input_placeholder$}">
@@ -138,14 +138,14 @@
       </div>
       <div id="voicePannel" class="content" style="display: none;">
         <div id="videoVolumeCtrl"
-          style="margin-top: 16px;width: 100%;display: flex;align-items: center;gap: 12px;padding: 0 20px;box-sizing: border-box;">
-          <span style="flex: 0 0 84px;line-height: 1;">{$video_volume$}</span>
+          style="margin-top: 16px;width: 100%;display: flex;align-items: center;gap: 12px;padding: 0 18px 0 14px;box-sizing: border-box;">
+          <span style="flex: 0 0 64px;line-height: 1;">{$video_volume$}</span>
           <input id="videoVolume" class="slider" type="range" value="100" min="0" max="100"
             style="flex: 1;margin: 0;">
         </div>
         <div id="callVolumeCtrl"
-          style="margin-top: 16px;width: 100%;display: flex;align-items: center;gap: 12px;padding: 0 20px;box-sizing: border-box;">
-          <span style="flex: 0 0 84px;line-height: 1;">{$call_volume$}</span>
+          style="margin-top: 16px;width: 100%;display: flex;align-items: center;gap: 12px;padding: 0 18px 0 14px;box-sizing: border-box;">
+          <span style="flex: 0 0 64px;line-height: 1;">{$call_volume$}</span>
           <input id="callVolume" class="slider" type="range" value="100" min="0" max="100"
             style="flex: 1;margin: 0;">
         </div>
