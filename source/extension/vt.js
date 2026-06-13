@@ -777,6 +777,11 @@
             }
             switch (s) {
                 case VoiceStatus.STOP:
+                    // 通話結束時若還停在音量面板，切回主畫面（此時音量切換鈕已隱藏，否則會卡住）
+                    if (select('#voicePannel') && select('#voicePannel').style.display !== 'none') {
+                        show(select('#mainPannel'));
+                        hide(select('#voicePannel'));
+                    }
                     break;
                 case VoiceStatus.MUTED:
                     show(disabledMic);
@@ -1305,13 +1310,6 @@
                         if (e.key == "Enter") {
                             sendBtn.click();
                         }
-                    });
-                    // 顏文字快速送出（配合彈幕）
-                    wrapper.querySelectorAll('.vt-emoji').forEach(btn => {
-                        btn.onclick = () => {
-                            extension.currentSendingMsgId = generateUUID();
-                            sendMessageToTop(MessageType.SendTxtMsg, { currentSendingMsgId: extension.currentSendingMsgId, value: btn.textContent });
-                        };
                     });
                     // 可自由拖動（拖左側握把）：用 transform translate 相對位移，與定位脈絡無關，
                     // 不會因全螢幕元素的 containing block 不同而飛到角落
