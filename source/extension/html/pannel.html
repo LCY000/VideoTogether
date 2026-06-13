@@ -165,6 +165,7 @@
     <div id="snackbar"></div>
 
     <div class="vt-modal-footer">
+      <div class="vt-footer-spacer"></div>
 
       <div id="lobbyBtnGroup">
         <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
@@ -633,13 +634,19 @@
 
   /* 愛心+分享：釘在 footer 右下角，固定不隨動作按鈕移動 */
   .vt-footer-corner {
-    position: absolute;
-    right: 10px;
-    top: 0;
-    bottom: 0;
+    order: 99;
+    flex: 1 1 0;
+    min-width: 0;
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 2px;
+  }
+
+  .vt-footer-spacer {
+    order: -1;
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   .vt-footer-corner .vt-modal-title-button {
