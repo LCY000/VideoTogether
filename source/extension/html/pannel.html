@@ -73,16 +73,23 @@
   <div class="vt-modal-content">
 
     <div class="vt-modal-body">
+      <div class="vt-field" id="vtRoomField" style="margin-bottom: 14px;">
+        <span class="ellipsis" id="videoTogetherRoomNameLabel" aria-label="{$room_input_lable$}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9.5L12 3l9 6.5"></path>
+            <path d="M5 10v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9"></path>
+            <path d="M9 20v-6h6v6"></path>
+          </svg>
+        </span>
+        <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="{$room_input_placeholder$}">
+      </div>
       <div id="vtStatusBar">
         <span id="memberCount"></span>
         <span id="videoTogetherRoleText"></span>
       </div>
       <div id="videoTogetherStatusText" style="min-height: 22.5px;">{$global_notification$}</div>
       <div id="mainPannel" class="content">
-        <div class="vt-field" id="vtRoomField" style="margin-bottom: 8px;">
-          <span class="ellipsis" id="videoTogetherRoomNameLabel">{$room_input_lable$}</span>
-          <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="{$room_input_placeholder$}">
-        </div>
         <div class="vt-field">
           <span class="ellipsis" id="videoTogetherRoomPasswordLabel">{$password_input_lable$}</span>
           <input id="videoTogetherRoomPdIpt" autocomplete="off" placeholder="{$password_input_placeholder$}">
@@ -126,13 +133,13 @@
       </div>
       <div id="voicePannel" class="content" style="display: none;">
         <div id="videoVolumeCtrl"
-          style="margin-top: 14px;width: 100%;display: flex;align-items: center;gap: 12px;padding: 0 18px 0 14px;box-sizing: border-box;">
+          style="margin-top: 15px;width: 100%;display: flex;align-items: center;gap: 12px;padding: 0 18px 0 14px;box-sizing: border-box;">
           <span style="flex: 0 0 64px;line-height: 1;">{$video_volume$}</span>
           <input id="videoVolume" class="slider" type="range" value="100" min="0" max="100"
             aria-label="{$video_volume$}" style="flex: 1;margin: 0;">
         </div>
         <div id="callVolumeCtrl"
-          style="margin-top: 16px;margin-bottom: 3px;width: 100%;display: flex;align-items: center;gap: 12px;padding: 0 18px 0 14px;box-sizing: border-box;">
+          style="margin-top: 16px;margin-bottom: 0px;width: 100%;display: flex;align-items: center;gap: 12px;padding: 0 18px 0 14px;box-sizing: border-box;">
           <span style="flex: 0 0 64px;line-height: 1;">{$call_volume$}</span>
           <input id="callVolume" class="slider" type="range" value="100" min="0" max="100"
             aria-label="{$call_volume$}" style="flex: 1;margin: 0;">
@@ -198,29 +205,28 @@
       </div>
 
 
-      <a href="https://afdian.com/a/videotogether" target="_blank" id="vtDonate" type="button"
-        class="vt-modal-donate vt-modal-title-button">
-        <span class="vt-modal-close-x">
-          <span role="img" class="vt-anticon vt-anticon-close vt-modal-close-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path
-                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-            </svg>
+      <div class="vt-footer-corner">
+        <a href="https://afdian.com/a/videotogether" target="_blank" id="vtDonate" type="button"
+          class="vt-modal-donate vt-modal-title-button">
+          <span class="vt-modal-close-x">
+            <span role="img" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+            </span>
           </span>
-        </span>
-      </a>
-      <button id="vtInviteBtn" type="button" aria-label="{$invite_button$}" style="display: none;"
-        class="vt-modal-share vt-modal-title-button">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="18" cy="5" r="3"></circle>
-          <circle cx="6" cy="12" r="3"></circle>
-          <circle cx="18" cy="19" r="3"></circle>
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-        </svg>
-      </button>
+        </a>
+        <button id="vtInviteBtn" type="button" aria-label="{$invite_button$}" style="display: none;"
+          class="vt-modal-share vt-modal-title-button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+          </svg>
+        </button>
+      </div>
 
       <button id="micBtn" style="display: none;" type="button" aria-label="麥克風"
         class="vt-modal-mic vt-modal-title-button">
@@ -605,7 +611,7 @@
     align-items: center;
     justify-content: center;
     gap: 9px;
-    padding: 20px 0;
+    padding: 24px 0;
     overflow-y: auto;
     font-size: 15px;
     color: var(--vt-text);
@@ -622,6 +628,23 @@
     gap: 8px;
     align-items: center;
     flex-shrink: 0;
+    position: relative;
+  }
+
+  /* 愛心+分享：釘在 footer 右下角，固定不隨動作按鈕移動 */
+  .vt-footer-corner {
+    position: absolute;
+    right: 10px;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .vt-footer-corner .vt-modal-title-button {
+    width: 26px;
+    height: 26px;
   }
 
   .vt-btn {

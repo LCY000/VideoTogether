@@ -765,7 +765,8 @@
             dsply(callBtn, s == VoiceStatus.STOP || inCall);
             dsply(micBtn, inCall);
             dsply(audioBtn, inCall);
-            dsply(select('#vtDonate'), !(inCall || s == VoiceStatus.CONNECTTING)); // 通話中/連線中：愛心讓位給音量/靜音
+            dsply(select('#vtDonate'), !(inCall || s == VoiceStatus.CONNECTTING)); // 通話中/連線中：愛心+分享讓位（角落收起）
+            dsply(select('#vtInviteBtn'), !(inCall || s == VoiceStatus.CONNECTTING));
             dsply(callErrorBtn, s == VoiceStatus.ERROR);
             // 通話鈕做成切換：通話中顯示「結束通話」並可掛斷
             if (callBtn) {
