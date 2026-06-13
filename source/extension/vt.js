@@ -775,13 +775,14 @@
                 }
                 callBtn.classList.toggle('vt-btn-callactive', inCall);
             }
+            // 非通話狀態（結束/斷線/連線中）若還停在音量面板就切回主畫面，避免卡住；並還原音量鈕高亮
+            if (!inCall && select('#voicePannel') && select('#voicePannel').style.display !== 'none') {
+                show(select('#mainPannel'));
+                hide(select('#voicePannel'));
+                if (audioBtn) audioBtn.style.color = '';
+            }
             switch (s) {
                 case VoiceStatus.STOP:
-                    // 通話結束時若還停在音量面板，切回主畫面（此時音量切換鈕已隱藏，否則會卡住）
-                    if (select('#voicePannel') && select('#voicePannel').style.display !== 'none') {
-                        show(select('#mainPannel'));
-                        hide(select('#voicePannel'));
-                    }
                     break;
                 case VoiceStatus.MUTED:
                     show(disabledMic);
@@ -1815,6 +1816,7 @@
             this.setTxtMsgInterface(0);
             dsply(this.downloadBtn, downloadEnabled())
             this.isInRoom = false;
+            updateInnnerHTML(select('#memberCount'), ''); // 回大廳清空人數，讓空狀態列收合
         }
 
         CreateRoomButtonOnClick() {
