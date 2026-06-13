@@ -1583,7 +1583,6 @@
                 });
                 this.videoTogetherRoleText = wrapper.querySelector("#videoTogetherRoleText")
                 this.videoTogetherSetting = wrapper.querySelector("#videoTogetherSetting");
-                hide(this.videoTogetherSetting);
                 this.inputRoomName = wrapper.querySelector('#videoTogetherRoomNameInput');
                 this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPdIpt");
                 this.inputRoomNameLabel = wrapper.querySelector('#videoTogetherRoomNameLabel');

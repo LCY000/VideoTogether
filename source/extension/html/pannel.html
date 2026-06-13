@@ -82,7 +82,6 @@
         <div class="vt-field" id="vtRoomField" style="margin-bottom: 8px;">
           <span class="ellipsis" id="videoTogetherRoomNameLabel">{$room_input_lable$}</span>
           <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="{$room_input_placeholder$}">
-          <button id="vtInviteBtn" type="button" class="vt-invite-btn" style="display: none;">{$invite_button$}</button>
         </div>
         <div class="vt-field">
           <span class="ellipsis" id="videoTogetherRoomPasswordLabel">{$password_input_lable$}</span>
@@ -211,6 +210,17 @@
           </span>
         </span>
       </a>
+      <button id="vtInviteBtn" type="button" aria-label="{$invite_button$}" style="display: none;"
+        class="vt-modal-share vt-modal-title-button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="3"></circle>
+          <circle cx="6" cy="12" r="3"></circle>
+          <circle cx="18" cy="19" r="3"></circle>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+        </svg>
+      </button>
 
       <button id="micBtn" style="display: none;" type="button" aria-label="麥克風"
         class="vt-modal-mic vt-modal-title-button">
@@ -737,28 +747,13 @@
     height: auto;
     padding: 4px 14px;
     border-radius: 999px;
+    flex: 0 0 auto;
+    width: auto;
   }
 
-  /* 房內房號置中（用 JS 加 class，不依賴 :has）+ 邀請鈕樣式 */
+  /* 房內房號置中（用 JS 加 class，不依賴 :has） */
   .vt-field--inroom {
     justify-content: center;
-  }
-
-  .vt-invite-btn {
-    flex: 0 0 auto;
-    border: 1px solid var(--vt-accent);
-    color: var(--vt-accent);
-    background: transparent;
-    font-size: 12.5px;
-    padding: 4px 14px;
-    border-radius: 999px;
-    cursor: pointer;
-    white-space: nowrap;
-    line-height: 1;
-  }
-
-  .vt-invite-btn:hover {
-    background: color-mix(in srgb, var(--vt-accent) 12%, transparent);
   }
 
   #videoTogetherRoomNameInput,
