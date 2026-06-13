@@ -1816,7 +1816,9 @@
             this.setTxtMsgInterface(0);
             dsply(this.downloadBtn, downloadEnabled())
             this.isInRoom = false;
-            updateInnnerHTML(select('#memberCount'), ''); // 回大廳清空人數，讓空狀態列收合
+            // 用 this.wrapper 清空人數（建構期 window.videoTogetherFlyPannel 尚未指派，不能用 select()）
+            let mc = this.wrapper.querySelector('#memberCount');
+            if (mc) updateInnnerHTML(mc, '');
         }
 
         CreateRoomButtonOnClick() {
