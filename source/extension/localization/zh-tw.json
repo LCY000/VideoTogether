@@ -9,6 +9,7 @@
     "help_room_button": "說明",
     "voice_call_button": "通話",
     "end_voice_call_button": "結束通話",
+    "invite_button": "邀請",
     "err_wrong_password": "密碼錯誤",
     "err_room_exists_wrong_password": "房間已存在，密碼錯誤",
     "err_room_not_exists": "房間不存在",

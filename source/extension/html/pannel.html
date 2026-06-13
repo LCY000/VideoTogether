@@ -44,18 +44,6 @@
       </span>
     </button>
 
-    <a href="https://afdian.com/a/videotogether" target="_blank" id="vtDonate" type="button"
-      class="vt-modal-donate vt-modal-title-button">
-      <span class="vt-modal-close-x">
-        <span role="img" class="vt-anticon vt-anticon-close vt-modal-close-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path
-              d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
-        </span>
-      </span>
-    </a>
 
     <a href="https://setting.2gether.video/" target="_blank" id="videoTogetherSetting" type="button"
       aria-label="Setting" class="vt-modal-setting vt-modal-title-button">
@@ -91,9 +79,10 @@
       </div>
       <div id="videoTogetherStatusText" style="min-height: 22.5px;">{$global_notification$}</div>
       <div id="mainPannel" class="content">
-        <div class="vt-field" style="margin-bottom: 8px;">
+        <div class="vt-field" id="vtRoomField" style="margin-bottom: 8px;">
           <span class="ellipsis" id="videoTogetherRoomNameLabel">{$room_input_lable$}</span>
           <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="{$room_input_placeholder$}">
+          <button id="vtInviteBtn" type="button" class="vt-invite-btn" style="display: none;">{$invite_button$}</button>
         </div>
         <div class="vt-field">
           <span class="ellipsis" id="videoTogetherRoomPasswordLabel">{$password_input_lable$}</span>
@@ -210,9 +199,18 @@
       </div>
 
 
-      <button id="videoTogetherHelpButton" class="vt-btn" type="button">
-        <span>{$help_room_button$}</span>
-      </button>
+      <a href="https://afdian.com/a/videotogether" target="_blank" id="vtDonate" type="button"
+        class="vt-modal-donate vt-modal-title-button">
+        <span class="vt-modal-close-x">
+          <span role="img" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </span>
+        </span>
+      </a>
 
       <button id="micBtn" style="display: none;" type="button" aria-label="麥克風"
         class="vt-modal-mic vt-modal-title-button">
@@ -731,13 +729,36 @@
 
   #videoTogetherRoomNameInput:disabled {
     border: none;
-    background-color: transparent;
+    background-color: var(--vt-hover);
     color: var(--vt-text);
     font-weight: 700;
     font-size: 13.5px;
     line-height: 1;
     height: auto;
-    padding-left: 0;
+    padding: 4px 14px;
+    border-radius: 999px;
+  }
+
+  /* 房內房號置中（用 JS 加 class，不依賴 :has）+ 邀請鈕樣式 */
+  .vt-field--inroom {
+    justify-content: center;
+  }
+
+  .vt-invite-btn {
+    flex: 0 0 auto;
+    border: 1px solid var(--vt-accent);
+    color: var(--vt-accent);
+    background: transparent;
+    font-size: 12.5px;
+    padding: 4px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .vt-invite-btn:hover {
+    background: color-mix(in srgb, var(--vt-accent) 12%, transparent);
   }
 
   #videoTogetherRoomNameInput,

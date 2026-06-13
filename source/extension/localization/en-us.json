@@ -9,6 +9,7 @@
     "help_room_button": "Help",
     "voice_call_button": "Call",
     "end_voice_call_button": "End call",
+    "invite_button": "Invite",
     "err_wrong_password": "Wrong password",
     "err_room_exists_wrong_password": "Room exists, wrong password",
     "err_room_not_exists": "Room does not exist",

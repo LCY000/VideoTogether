@@ -9,6 +9,7 @@
     "help_room_button": "ヘルプ",
     "voice_call_button": "通話",
     "end_voice_call_button": "通話を終了",
+    "invite_button": "招待",
     "err_wrong_password": "パスワードが違います",
     "err_room_exists_wrong_password": "ルームは存在します（パスワード違い）",
     "err_room_not_exists": "ルームが存在しません",

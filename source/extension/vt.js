@@ -765,7 +765,7 @@
             dsply(callBtn, s == VoiceStatus.STOP || inCall);
             dsply(micBtn, inCall);
             dsply(audioBtn, inCall);
-            dsply(select('#videoTogetherHelpButton'), !(inCall || s == VoiceStatus.CONNECTTING)); // 通話中/連線中：說明讓位給音量/靜音
+            dsply(select('#vtDonate'), !(inCall || s == VoiceStatus.CONNECTTING)); // 通話中/連線中：愛心讓位給音量/靜音
             dsply(callErrorBtn, s == VoiceStatus.ERROR);
             // 通話鈕做成切換：通話中顯示「結束通話」並可掛斷
             if (callBtn) {
@@ -1524,6 +1524,9 @@
                         popupError("{$easy_share_link_copy_failed$}");
                     }
                 }
+                // 邀請鈕：沿用 easyshare 的「複製邀請連結」邏輯
+                this.inviteBtn = wrapper.querySelector('#vtInviteBtn');
+                if (this.inviteBtn) this.inviteBtn.onclick = this.easyShareCopyBtn.onclick;
                 this.callErrorBtn.onclick = () => {
                     Voice.join("", window.videoTogetherExtension.roomName);
                 }
@@ -1575,7 +1578,6 @@
 
                 this.createRoomButton.onclick = this.CreateRoomButtonOnClick.bind(this);
                 this.joinRoomButton.onclick = this.JoinRoomButtonOnClick.bind(this);
-                this.helpButton.onclick = this.HelpButtonOnClick.bind(this);
                 this.exitButton.onclick = (() => {
                     window.videoTogetherExtension.exitRoom();
                 });
@@ -1792,6 +1794,8 @@
             } catch { };
             this.Maximize();
             this.inputRoomName.disabled = true;
+            let rf = this.wrapper.querySelector('#vtRoomField'); if (rf) rf.classList.add('vt-field--inroom');
+            let ib = this.wrapper.querySelector('#vtInviteBtn'); if (ib) show(ib);
             hide(this.lobbyBtnGroup)
             show(this.roomButtonGroup);
             this.exitButton.style = "";
@@ -1816,9 +1820,11 @@
             this.setTxtMsgInterface(0);
             dsply(this.downloadBtn, downloadEnabled())
             this.isInRoom = false;
-            // 用 this.wrapper 清空人數（建構期 window.videoTogetherFlyPannel 尚未指派，不能用 select()）
+            // 用 this.wrapper（建構期 window.videoTogetherFlyPannel 尚未指派，不能用 select()）清空人數 + 收起房內元素
             let mc = this.wrapper.querySelector('#memberCount');
             if (mc) updateInnnerHTML(mc, '');
+            let rf = this.wrapper.querySelector('#vtRoomField'); if (rf) rf.classList.remove('vt-field--inroom');
+            let ib = this.wrapper.querySelector('#vtInviteBtn'); if (ib) hide(ib);
         }
 
         CreateRoomButtonOnClick() {
