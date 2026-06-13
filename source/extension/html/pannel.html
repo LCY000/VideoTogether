@@ -141,13 +141,13 @@
           style="margin-top: 14px;width: 100%;display: flex;align-items: center;gap: 12px;padding: 0 18px 0 14px;box-sizing: border-box;">
           <span style="flex: 0 0 64px;line-height: 1;">{$video_volume$}</span>
           <input id="videoVolume" class="slider" type="range" value="100" min="0" max="100"
-            style="flex: 1;margin: 0;">
+            aria-label="{$video_volume$}" style="flex: 1;margin: 0;">
         </div>
         <div id="callVolumeCtrl"
           style="margin-top: 16px;margin-bottom: 9px;width: 100%;display: flex;align-items: center;gap: 12px;padding: 0 18px 0 14px;box-sizing: border-box;">
           <span style="flex: 0 0 64px;line-height: 1;">{$call_volume$}</span>
           <input id="callVolume" class="slider" type="range" value="100" min="0" max="100"
-            style="flex: 1;margin: 0;">
+            aria-label="{$call_volume$}" style="flex: 1;margin: 0;">
         </div>
         <div id="iosVolumeErr" style="display: none;">
           <p>{$ios_does_not_support_volume_adjustment$}</p>
@@ -487,7 +487,7 @@
   }
 
   .vt-modal-close-x:hover {
-    color: #1890ff;
+    color: var(--vt-accent);
   }
 
   .error-button {
@@ -828,7 +828,7 @@
     width: 13px;
     height: 13px;
     border-radius: 50%;
-    background: #6c6c6c;
+    background: var(--vt-muted);
     animation-timing-function: cubic-bezier(0, 1, 1, 0);
   }
 
@@ -885,21 +885,12 @@
 
 
 
-  .range-slider {
-    margin: 0px 0 0 0px;
-    display: inline-block;
-  }
-
-  .range-slider {
-    width: 130px
-  }
-
   .slider {
     -webkit-appearance: none;
     width: calc(100% - (0px));
     height: 5px;
     border-radius: 5px;
-    background: #d7dcdf;
+    background: var(--vt-border);
     outline: none;
     padding: 0;
     margin: 0;
@@ -911,22 +902,22 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #2c3e50;
+    background: var(--vt-accent);
     cursor: pointer;
     -webkit-transition: background 0.15s ease-in-out;
     transition: background 0.15s ease-in-out;
   }
 
   .slider::-moz-range-progress {
-    background-color: #1abc9c;
+    background-color: var(--vt-accent);
   }
 
   .slider::-webkit-slider-thumb:hover {
-    background: #1abc9c;
+    background: var(--vt-accent);
   }
 
   .slider:active::-webkit-slider-thumb {
-    background: #1abc9c;
+    background: var(--vt-accent);
   }
 
   .slider::-moz-range-thumb {
@@ -934,22 +925,22 @@
     height: 10px;
     border: 0;
     border-radius: 50%;
-    background: #2c3e50;
+    background: var(--vt-accent);
     cursor: pointer;
     -moz-transition: background 0.15s ease-in-out;
     transition: background 0.15s ease-in-out;
   }
 
   .slider::-moz-range-thumb:hover {
-    background: #1abc9c;
+    background: var(--vt-accent);
   }
 
   .slider:active::-moz-range-thumb {
-    background: #1abc9c;
+    background: var(--vt-accent);
   }
 
   ::-moz-range-track {
-    background: #d7dcdf;
+    background: var(--vt-border);
     border: 0;
   }
 
@@ -973,7 +964,7 @@
   }
 
   .toggler-wrapper input[type="checkbox"]:checked+.toggler-slider {
-    background-color: #1abc9c;
+    background-color: var(--vt-accent);
   }
 
   .toggler-wrapper .toggler-slider {

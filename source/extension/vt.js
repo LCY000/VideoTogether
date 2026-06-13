@@ -452,10 +452,10 @@
         const max = slider.max
         const value = slider.value
 
-        slider.style.background = `linear-gradient(to right, #1abc9c 0%, #1abc9c ${(value - min) / (max - min) * 100}%, #d7dcdf ${(value - min) / (max - min) * 100}%, #d7dcdf 100%)`
+        slider.style.background = `linear-gradient(to right, var(--vt-accent) 0%, var(--vt-accent) ${(value - min) / (max - min) * 100}%, var(--vt-border) ${(value - min) / (max - min) * 100}%, var(--vt-border) 100%)`
 
         slider.addEventListener('input', function () {
-            this.style.background = `linear-gradient(to right, #1abc9c 0%, #1abc9c ${(this.value - this.min) / (this.max - this.min) * 100}%, #d7dcdf ${(this.value - this.min) / (this.max - this.min) * 100}%, #d7dcdf 100%)`
+            this.style.background = `linear-gradient(to right, var(--vt-accent) 0%, var(--vt-accent) ${(this.value - this.min) / (this.max - this.min) * 100}%, var(--vt-border) ${(this.value - this.min) / (this.max - this.min) * 100}%, var(--vt-border) 100%)`
         });
     }
 
@@ -765,7 +765,7 @@
             dsply(callBtn, s == VoiceStatus.STOP || inCall);
             dsply(micBtn, inCall);
             dsply(audioBtn, inCall);
-            dsply(select('#videoTogetherHelpButton'), !inCall); // 通話中：說明讓位給音量/靜音
+            dsply(select('#videoTogetherHelpButton'), !(inCall || s == VoiceStatus.CONNECTTING)); // 通話中/連線中：說明讓位給音量/靜音
             dsply(callErrorBtn, s == VoiceStatus.ERROR);
             // 通話鈕做成切換：通話中顯示「結束通話」並可掛斷
             if (callBtn) {
@@ -1544,9 +1544,9 @@
                     dsply(select('#mainPannel'), hideMain);
                     dsply(select('#voicePannel'), !hideMain);
                     if (!hideMain) {
-                        this.audioBtn.style.color = '#1890ff';
+                        this.audioBtn.style.color = 'var(--vt-accent)';
                     } else {
-                        this.audioBtn.style.color = '#6c6c6c';
+                        this.audioBtn.style.color = '';
                     }
                     if (await isAudioVolumeRO()) {
                         show(select('#iosVolumeErr'));
