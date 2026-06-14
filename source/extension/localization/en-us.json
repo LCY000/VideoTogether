@@ -14,6 +14,7 @@
     "err_room_exists_wrong_password": "Room exists, wrong password",
     "err_room_not_exists": "Room does not exist",
     "err_other_host_syncing": "Another host is syncing",
+    "host_handed_over": "Host handed over — now following the new host",
     "exit_room_button": "Exit",
     "host_role": "Host (in control)",
     "memeber_role": "Viewer (following)",

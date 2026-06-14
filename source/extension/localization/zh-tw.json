@@ -14,6 +14,7 @@
     "err_room_exists_wrong_password": "房間已存在，密碼錯誤",
     "err_room_not_exists": "房間不存在",
     "err_other_host_syncing": "其他房主正在同步",
+    "host_handed_over": "已交接給新房主，改為跟隨",
     "exit_room_button": "退出",
     "host_role": "房主（控制中）",
     "memeber_role": "觀眾（跟隨）",

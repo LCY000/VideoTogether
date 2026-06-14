@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781456615
+// @version      1781473027
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -18,7 +18,7 @@
     const language = 'zh-cn'
     const vtRuntime = `website`;
     // 設定頁網址（要改成自己部署的設定頁時，只改這一行即可）
-    const VT_SETTING_PAGE_URL = "https://lcy000.github.io/VideoTogether-setting/v2.html";
+    const VT_SETTING_PAGE_URL = "https://lcy000.github.io/VideoTogether-setting/v3.html";
     const realUrlCache = {}
     const m3u8ContentCache = {}
 
@@ -767,6 +767,8 @@
 
     function changeMemberCount(c) {
         extension.ctxMemberCount = c;
+        // 退出房間後可能還有「飛行中」的同步 tick 事後回來，把人數重畫進大廳版面（bug）。大廳時不渲染。
+        if (!window.videoTogetherFlyPannel || !window.videoTogetherFlyPannel.isInRoom) return;
         const icon = '<svg class="vt-mc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
         updateInnnerHTML(select('#memberCount'), icon + '<span class="vt-mc-num">' + c + '</span>')
     }
@@ -1980,7 +1982,7 @@
     </button>
 
 
-    <a href="https://lcy000.github.io/VideoTogether-setting/v2.html" target="_blank" id="videoTogetherSetting" type="button"
+    <a href="https://lcy000.github.io/VideoTogether-setting/v3.html" target="_blank" id="videoTogetherSetting" type="button"
       aria-label="Setting" class="vt-modal-setting vt-modal-title-button">
       <span class="vt-modal-close-x">
         <span role="img" aria-label="Setting" class="vt-anticon vt-anticon-close vt-modal-close-icon">
@@ -3811,7 +3813,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781456615';
+            this.version = '1781473027';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3975,6 +3977,21 @@
                     setRoleText("");
                     break;
             }
+        }
+
+        // 房主被別人用「同房名 + 密碼」按『創建房間』接手時，伺服器會對原房主的更新回 "Other Host Is Syncing"。
+        // 朋友間換房主的情境：自動把原房主降為觀眾並開始跟隨新房主（之後的 tick 走 Member 分支會自動跟播/跳轉）。
+        // 回傳 true 代表「已處理（已降級）」，呼叫端就不要再把它當紅字錯誤顯示。
+        MaybeDemoteOnTakeover(e) {
+            try {
+                let msg = (e && e.message) ? e.message : ("" + e);
+                if (msg === "Other Host Is Syncing" && this.role === this.RoleEnum.Master) {
+                    this.setRole(this.RoleEnum.Member);
+                    this.UpdateStatusText("已交接给新房主，改为跟随", "");
+                    return true;
+                }
+            } catch (_) { }
+            return false;
         }
 
         async generateEasyShareLink(china = false) {
@@ -4494,13 +4511,15 @@
                     } catch { };
                     try {
                         await this.UpdateRoom(data.name, data.password, data.url, data.playbackRate, data.currentTime, data.paused, data.duration, data.localTimestamp, data.m3u8Url);
+                        if (this.role === this.RoleEnum.Null) break; // 已退出房間，忽略飛行中 tick 殘留的同步狀態
                         if (this.waitForLoadding) {
                             this.UpdateStatusText("等待成员加载视频", "red");
                         } else {
                             _this.UpdateStatusText("视频同步成功", "green");
                         }
                     } catch (e) {
-                        this.UpdateStatusText(e, "red");
+                        if (this.MaybeDemoteOnTakeover(e)) break; // 被接手 → 自動降為觀眾並跟隨新房主
+                        if (this.role !== this.RoleEnum.Null) this.UpdateStatusText(e, "red");
                     }
                     break;
                 case MessageType.SyncMemberVideo:
@@ -4509,7 +4528,7 @@
                             try {
                                 await this.SyncMemberVideo(data, video);
                             } catch (e) {
-                                _this.UpdateStatusText(e, "red");
+                                if (_this.role !== _this.RoleEnum.Null) _this.UpdateStatusText(e, "red");
                             }
                         }
                     })
@@ -4573,10 +4592,14 @@
                             windowPannel.voiceSelect.value = data.PublicMessageVoice;
                         }
                     } catch { };
-                    if (!window.videoTogetherFlyPannel.disableDefaultSize && firstSync) {
+                    if (firstSync) {
+                        // 全域「預設最小化」(MinimiseDefault) 優先：開啟時每次載入都先收成右下角小圖示，
+                        // 即使本站之前手動展開/收合過也一樣（Init() 讀 VideoTogetherMinimizedHere 會把 disableDefaultSize 設成 true，
+                        // 舊版寫法會因此整段被跳過，導致此開關「看起來完全沒作用」）。
+                        // 關閉時才尊重本站記憶：已有 disableDefaultSize（Init 已套本站狀態）就不動，否則預設展開。
                         if (data.MinimiseDefault) {
                             window.videoTogetherFlyPannel.Minimize(true);
-                        } else {
+                        } else if (!window.videoTogetherFlyPannel.disableDefaultSize) {
                             window.videoTogetherFlyPannel.Maximize(true);
                         }
                     }
@@ -5153,7 +5176,8 @@
                     }
                 }
             } catch (e) {
-                this.UpdateStatusText(e, "red");
+                if (this.MaybeDemoteOnTakeover(e)) return; // 房主被接手 → 自動降為觀眾並跟隨新房主
+                if (this.role !== this.RoleEnum.Null) this.UpdateStatusText(e, "red"); // 已退出則忽略飛行中 tick 殘留狀態
             }
         }
 

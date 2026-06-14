@@ -14,6 +14,7 @@
     "err_room_exists_wrong_password": "ルームは存在します（パスワード違い）",
     "err_room_not_exists": "ルームが存在しません",
     "err_other_host_syncing": "他のホストが同期中です",
+    "host_handed_over": "ホストを引き継ぎました。新しいホストに追従します",
     "exit_room_button": "退出",
     "host_role": "ホスト（操作中）",
     "memeber_role": "視聴者（追従）",
