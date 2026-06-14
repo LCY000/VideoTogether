@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781474115
+// @version      1781478894
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -2552,7 +2552,8 @@
     align-items: center;
     justify-content: center;
     gap: 9px;
-    padding: 24px 0;
+    /* 上方留白比下方多一點，補償 footer 的 border-top + padding，讓「標題→房號」與「密碼→按鈕」視覺間隔一致 */
+    padding: 34px 0 24px;
     overflow-y: auto;
     font-size: 15px;
     color: var(--vt-text);
@@ -3813,7 +3814,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781474115';
+            this.version = '1781478894';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

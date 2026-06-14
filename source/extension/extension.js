@@ -178,8 +178,8 @@
         settingLanguage = await getGM().getValue("DisplayLanguage");
     } catch (e) { };
 
-    if (typeof settingLanguage != 'string') {
-        settingLanguage = navigator.language;
+    if (typeof settingLanguage != 'string' || settingLanguage.trim() === '' || settingLanguage.toLowerCase() === 'auto') {
+        settingLanguage = navigator.language; // 空值／auto＝自動偵測瀏覽器語言（修正：選空白選項時不再固定變英文）
     }
     if (typeof settingLanguage == 'string') {
         settingLanguage = settingLanguage.toLowerCase();

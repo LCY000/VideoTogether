@@ -1,6 +1,6 @@
-# AniméSync — VideoTogether 介面 / 體驗重做（變更說明）
+# VideoTogether 介面 / 體驗重做（變更說明）
 
-> 本分支 `feature/anime-ui-rework` 以 `main` 為基底，是 [VideoTogether](https://github.com/VideoTogether/VideoTogether)（MIT）的 fork。
+> 本分支以 `main` 為基底，改進 [VideoTogether](https://github.com/VideoTogether/VideoTogether) 的介面與體驗，目標是回饋給上游。
 > 目標：把「和朋友一起看番」的觀看體驗做順——更現代的視覺、繁體中文、清楚的「誰在控制」狀態。
 > **原則：盡量不刪上游功能**，所有改動集中在 extension 前端，方便日後維護或合併回上游。
 
@@ -30,8 +30,7 @@
 
 ## 2. 品牌
 
-- userscript metadata：`@name` →「AniméSync 一起看」、`@author` → AniméSync、`@namespace` → 專案 repo。
-- 面板標題「VideoTogether」→「AniméSync」。
+- 品牌一律維持 **VideoTogether**（userscript metadata、面板標題、通知、主題 localStorage key 皆是）。
 - *（誠實註記）* `@description` 已**移除原本「附彈幕」字樣**——彈幕尚未實作，見 §9。
 
 ## 3. 視覺主題（重做）
@@ -40,7 +39,7 @@
 - **深色玻璃面板**：`backdrop-filter` 霧面毛玻璃、16px 圓角、柔和景深陰影。
 - **淺 / 深色模式**：
   - 預設深色，且**自動跟隨系統**（`@media (prefers-color-scheme: light)`）。
-  - **可手動切換**：標題列小圓鈕 `#vtThemeToggle`，切換 `:host([data-vt-theme])`，選擇用 `localStorage("AnimeSyncTheme")` 記憶；對應 vt.js 的 `InitTheme()` / `ToggleTheme()`。
+  - **可手動切換**：標題列小圓鈕 `#vtThemeToggle`，切換 `:host([data-vt-theme])`，選擇用 `localStorage("VideoTogetherTheme")` 記憶；對應 vt.js 的 `InitTheme()` / `ToggleTheme()`。
 - **按鈕**：膠囊形；主鈕藍漸層 + 收斂陰影；次鈕玻璃質感；**退出鈕改中性灰（不再紅色）**——紅色容易讓人誤以為出錯。
 - **狀態文字色票化**：`#videoTogetherStatusText` 依 `data-vt-status`(ok/error/info) 著色——**同步成功改藍（非綠）**、資訊灰、錯誤才警示色，且跟隨主題。
 - **角色膠囊**改藍 accent（不再紅 / 粉）；**人數 icon** 從 👥 emoji 改成扁平描邊 people SVG；**愛心**從實心紅改中性描邊線條（風格統一、不搶眼）。
@@ -86,7 +85,7 @@
 
 ## 9. 尚未實作 / 已知限制（誠實揭露）
 
-- **彈幕（螢幕飄字）尚未實作。** AniméSync 的開發倉裡有一個獨立的「彈幕分道演算法」原型（`src/danmaku/lanes.mjs`，含 6 個單元測試），但它**未整合進播放器、不會在畫面上呈現，且不包含在本分支**。畫面上目前沒有任何彈幕。
+- **彈幕（螢幕飄字）尚未實作。** 另一個開發倉裡有一個獨立的「彈幕分道演算法」原型（`src/danmaku/lanes.mjs`，含 6 個單元測試），但它**未整合進播放器、不會在畫面上呈現，且不包含在本分支**。畫面上目前沒有任何彈幕。
 - 全螢幕的快速顏文字鈕目前是發到**文字聊天**，不是彈幕（見 §6）。
 - userscript `@description` 已對應移除「附彈幕」字樣，避免誤導。
 
