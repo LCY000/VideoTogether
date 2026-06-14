@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://videotogether.github.io/
-// @version      1760354064
+// @version      1781453035
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -32,7 +32,7 @@
         return;
     }
 
-    let version = '1760354064'
+    let version = '1781453035'
     let type = 'Chrome'
     function getBrowser() {
         switch (type) {
@@ -171,7 +171,7 @@
     }
 
 
-    const languages = ['en-us', 'zh-cn', 'ja-jp'];
+    const languages = ['en-us', 'zh-cn', 'zh-tw', 'ja-jp'];
     let language = 'en-us';
     let settingLanguage = undefined;
     try {
@@ -185,6 +185,9 @@
         settingLanguage = settingLanguage.toLowerCase();
         if (languages.includes(settingLanguage)) {
             language = settingLanguage;
+        } else if (settingLanguage.split('-')[0] === 'zh') {
+            // 中文再細分:繁體（tw/hk/mo/hant）對到 zh-tw,其餘（cn/sg/hans…）對到 zh-cn
+            language = /(^|-)(tw|hk|mo|hant)(-|$)/.test(settingLanguage) ? 'zh-tw' : 'zh-cn';
         } else {
             const settingLanguagePrefix = settingLanguage.split('-')[0];
             for (let i = 0; i < languages.length; i++) {
@@ -278,7 +281,8 @@
 
         if (isTrustPageCache == undefined) {
             const domains = [
-                '2gether.video', 'videotogether.github.io'
+                '2gether.video', 'videotogether.github.io',
+                'lcy000.github.io' // 我們 fork 的設定頁網域（信任，才能讀寫設定）
             ];
 
             const hostname = window.location.hostname;
@@ -341,6 +345,7 @@
                 case 15: {
                     if (window.location.hostname.endsWith("videotogether.github.io")
                         || window.location.hostname.endsWith("2gether.video")
+                        || window.location.hostname.endsWith("lcy000.github.io")
                         || e.data.data.key.startsWith("Public")
                         || isWebsite
                         || isDevelopment) {

@@ -171,7 +171,7 @@
     }
 
 
-    const languages = ['en-us', 'zh-cn', 'ja-jp', 'zh-tw'];
+    const languages = ['en-us', 'zh-cn', 'zh-tw', 'ja-jp'];
     let language = 'en-us';
     let settingLanguage = undefined;
     try {
@@ -281,7 +281,8 @@
 
         if (isTrustPageCache == undefined) {
             const domains = [
-                '2gether.video', 'videotogether.github.io'
+                '2gether.video', 'videotogether.github.io',
+                'lcy000.github.io' // 我們 fork 的設定頁網域（信任，才能讀寫設定）
             ];
 
             const hostname = window.location.hostname;
@@ -344,6 +345,7 @@
                 case 15: {
                     if (window.location.hostname.endsWith("videotogether.github.io")
                         || window.location.hostname.endsWith("2gether.video")
+                        || window.location.hostname.endsWith("lcy000.github.io")
                         || e.data.data.key.startsWith("Public")
                         || isWebsite
                         || isDevelopment) {

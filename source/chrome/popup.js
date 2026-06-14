@@ -92,6 +92,16 @@
             'disabled': "停用",
             'refreshAfterChange': "启用或禁用后请刷新网页生效"
         },
+        'zh-tw': {
+            'enabled': "啟用",
+            'disabled': "停用",
+            'refreshAfterChange': "啟用或停用後請重新整理網頁才會生效"
+        },
+        'ja-jp': {
+            'enabled': "有効",
+            'disabled': "無効",
+            'refreshAfterChange': "変更後はページを再読み込みしてください"
+        },
         'en-us': {
             'enabled': "Enabled",
             'disabled': "Disabled",
@@ -99,7 +109,7 @@
         }
     }
 
-    let languages = ['en-us', 'zh-cn'];
+    let languages = ['en-us', 'zh-cn', 'zh-tw', 'ja-jp'];
     let language = 'en-us';
     let prefixLen = 0;
     let settingLanguage = undefined;

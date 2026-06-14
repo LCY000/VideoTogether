@@ -17,6 +17,8 @@
     } catch { }
     const language = '{$language$}'
     const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
+    // 設定頁網址（要改成自己部署的設定頁時，只改這一行即可）
+    const VT_SETTING_PAGE_URL = "https://lcy000.github.io/VideoTogether-setting/v2.html";
     const realUrlCache = {}
     const m3u8ContentCache = {}
 
@@ -58,7 +60,8 @@
     let trustedPolicy = undefined;
     function updateInnnerHTML(e, html) {
         try {
-            e.innerHTML = html;
+            // 已建立過 Trusted Types policy（如 YouTube 強制）就直接用，避免每次都先丟一次 raw innerHTML 而噴 console 錯誤
+            e.innerHTML = trustedPolicy ? trustedPolicy.createHTML(html) : html;
         } catch {
             if (trustedPolicy == undefined) {
                 trustedPolicy = trustedTypes.createPolicy('videoTogetherExtensionVtJsPolicy', {
@@ -160,6 +163,10 @@
 
     function getEnableMiniBar() {
         return getVideoTogetherStorage('EnableMiniBar', true);
+    }
+
+    function getEnableMessageVoice() {
+        return getVideoTogetherStorage('EnableMessageVoice', true);
     }
 
     function skipIntroLen() {
@@ -1524,9 +1531,20 @@
                         popupError("{$easy_share_link_copy_failed$}");
                     }
                 }
-                // 邀請鈕：沿用 easyshare 的「複製邀請連結」邏輯
+                // 邀請鈕：複製「可直接點開的房間連結」（純連結，不加任何說明文字/備用連結）
                 this.inviteBtn = wrapper.querySelector('#vtInviteBtn');
-                if (this.inviteBtn) this.inviteBtn.onclick = this.easyShareCopyBtn.onclick;
+                if (this.inviteBtn) this.inviteBtn.onclick = async () => {
+                    try {
+                        // 直接給「加入房間連結」：朋友點開直達房主目前的影片頁並自動進房，
+                        // 不再經過 easyshare 轉送頁（該頁 zh-tw 在上游是 404，且會多等 6 秒才跳轉）。
+                        // 用「乾淨網址」(linkWithoutState) 當基底，讓對方的 url 與房間 url 一致 → 不會再觸發跳轉/暫時頁。
+                        const link = extension.linkWithMemberState(extension.linkWithoutState(window.location), extension.RoleEnum.Member, false).toString();
+                        await navigator.clipboard.writeText(link);
+                        popupError("{$easy_share_link_copied$}");
+                    } catch {
+                        popupError("{$easy_share_link_copy_failed$}");
+                    }
+                };
                 this.callErrorBtn.onclick = () => {
                     Voice.join("", window.videoTogetherExtension.roomName);
                 }
@@ -1587,6 +1605,14 @@
                 this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPdIpt");
                 this.inputRoomNameLabel = wrapper.querySelector('#videoTogetherRoomNameLabel');
                 this.inputRoomPasswordLabel = wrapper.querySelector("#videoTogetherRoomPasswordLabel");
+                // 大廳「房間/密碼」標籤等寬，讓兩個輸入框對齊（中文兩字本來就齊；英日標籤長度不同需補齊）
+                try {
+                    const lobbyLabelW = { 'en-us': '70px', 'ja-jp': '82px' }[language];
+                    if (lobbyLabelW) {
+                        this.inputRoomNameLabel.style.flex = '0 0 ' + lobbyLabelW;
+                        this.inputRoomPasswordLabel.style.flex = '0 0 ' + lobbyLabelW;
+                    }
+                } catch { }
                 this.videoTogetherHeader = wrapper.querySelector("#videoTogetherHeader");
                 this.videoTogetherFlyPannel = wrapper.getElementById("videoTogetherFlyPannel");
                 this.videoTogetherSamllIcon = wrapper.getElementById("videoTogetherSamllIcon");
@@ -1794,6 +1820,7 @@
             this.Maximize();
             this.inputRoomName.disabled = true;
             let rf = this.wrapper.querySelector('#vtRoomField'); if (rf) rf.classList.add('vt-field--inroom');
+            let rc = this.wrapper.querySelector('#vtRoomCard'); if (rc) rc.classList.add('vt-roomcard--active');
             let ib = this.wrapper.querySelector('#vtInviteBtn'); if (ib) show(ib);
             hide(this.lobbyBtnGroup)
             show(this.roomButtonGroup);
@@ -1823,6 +1850,7 @@
             let mc = this.wrapper.querySelector('#memberCount');
             if (mc) updateInnnerHTML(mc, '');
             let rf = this.wrapper.querySelector('#vtRoomField'); if (rf) rf.classList.remove('vt-field--inroom');
+            let rc = this.wrapper.querySelector('#vtRoomCard'); if (rc) rc.classList.remove('vt-roomcard--active');
             let ib = this.wrapper.querySelector('#vtInviteBtn'); if (ib) hide(ib);
         }
 
@@ -2079,7 +2107,8 @@
                 const currentCount = messageListenerAliveCount;
                 setTimeout(() => {
                     if (currentCount == messageListenerAliveCount) {
-                        console.error("messageListener is dead");
+                        // 看門狗：閒置頁面常會「沒訊息」而誤報，降級為 debug（不再被 Chrome 當擴充錯誤收集）；仍保留重掛當自我修復
+                        console.debug("messageListener is dead");
                         window.addEventListener('message', messageListener);
                     }
                 }, 6000);
@@ -2120,7 +2149,9 @@
             if (idx > speechSynthesis.getVoices().length) {
                 return;
             }
-            if (!prepare && !extension.speechSynthesisEnabled) {
+            // 使用者可在設定頁關閉「文字訊息語音播報」(EnableMessageVoice)；關閉時仍保留文字通知與輸入清空，僅不播語音、不彈出啟用語音面板
+            const voiceOn = getEnableMessageVoice();
+            if (voiceOn && !prepare && !extension.speechSynthesisEnabled) {
                 windowPannel.ShowTxtMsgTouchPannel();
                 for (let i = 0; i <= 1000 && !extension.speechSynthesisEnabled; i++) {
                     await new Promise(r => setTimeout(r, 100));
@@ -2131,6 +2162,9 @@
                     select("#textMessageInput").value = "";
                 }
             } catch { }
+            if (!voiceOn) {
+                return;
+            }
 
             // iOS cannot play audio in background
             if (!isEmpty(audioUrl) && !this.isIos) {
@@ -2791,14 +2825,13 @@
                     try {
                         if (firstSync) {
                             if (!isWeb()) {
-                                window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://videotogether.github.io/setting/v2.html";
+                                // 設定頁網址統一用 VT_SETTING_PAGE_URL（在檔案最上方，一行可改）
+                                window.videoTogetherFlyPannel.videoTogetherSetting.href = VT_SETTING_PAGE_URL;
                                 show(select('#videoTogetherSetting'));
                             } else {
-                                // website
-                                if (window.videoTogetherWebsiteSettingUrl != undefined) {
-                                    window.videoTogetherFlyPannel.videoTogetherSetting.href = window.videoTogetherWebsiteSettingUrl;
-                                    show(select('#videoTogetherSetting'));
-                                }
+                                // website：優先用主站傳入的網址，沒有就退回 VT_SETTING_PAGE_URL
+                                window.videoTogetherFlyPannel.videoTogetherSetting.href = window.videoTogetherWebsiteSettingUrl || VT_SETTING_PAGE_URL;
+                                show(select('#videoTogetherSetting'));
                             }
                         }
                     } catch (e) { }
@@ -3317,7 +3350,8 @@
                                 let state = this.GetRoomState(newUrl);
                                 sendMessageToTop(MessageType.SetTabStorage, state);
                                 setInterval(() => {
-                                    if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == newUrl) {
+                                    // 加防呆：擴充重載/尚未同步時 storage 可能為 undefined，避免噴 TypeError(reading 'VideoTogetherUrl')
+                                    if (window.VideoTogetherStorage?.VideoTogetherTabStorage?.VideoTogetherUrl == newUrl) {
                                         try {
                                             if (isWeb()) {
                                                 if (!this._jumping && window.location.origin != (new URL(newUrl).origin)) {
@@ -3342,6 +3376,8 @@
                         } else {
                             let state = this.GetRoomState("");
                             sendMessageToTop(MessageType.SetTabStorage, state);
+                            // 成員也每輪更新 session（時間戳保持新鮮），刷新才不會因「>60 秒過期」被踢出房間
+                            this.SaveStateToSessionStorageWhenSameOrigin("");
                         }
                         if (this.PlayAdNow()) {
                             throw new Error("{$ad_playing$}");
