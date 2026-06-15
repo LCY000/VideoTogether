@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781479715
+// @version      1781494307
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -567,7 +567,7 @@
     }
 
     function getEnableMessageVoice() {
-        return getVideoTogetherStorage('EnableMessageVoice', false);
+        return getVideoTogetherStorage('EnableMessageVoice', true);
     }
 
     function skipIntroLen() {
@@ -3815,7 +3815,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781479715';
+            this.version = '1781494307';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

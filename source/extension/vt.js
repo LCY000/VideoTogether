@@ -166,7 +166,7 @@
     }
 
     function getEnableMessageVoice() {
-        return getVideoTogetherStorage('EnableMessageVoice', false);
+        return getVideoTogetherStorage('EnableMessageVoice', true);
     }
 
     function skipIntroLen() {

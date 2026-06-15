@@ -8,3 +8,5 @@ xcuserdata/
 source/local/
 source/setting/
 source/website/
+# 開發交接 / 暫存產物，不納入追蹤
+handoff/
