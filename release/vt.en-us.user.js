@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781527671
+// @version      1781531428
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -3948,7 +3948,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781527671';
+            this.version = '1781531428';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -4119,6 +4119,29 @@
         // 房主被別人用「同房名 + 密碼」按『創建房間』接手時，伺服器會對原房主的更新回 "Other Host Is Syncing"。
         // 朋友間換房主的情境：自動把原房主降為觀眾並開始跟隨新房主（之後的 tick 走 Member 分支會自動跟播/跳轉）。
         // 回傳 true 代表「已處理（已降級）」，呼叫端就不要再把它當紅字錯誤顯示。
+        // 房主切到「新的同步影片」時，於狀態列提醒等觀眾載入（用 holdMs 停留約 5 秒、不被例行狀態洗掉）。
+        // 只在真正同步的影片 id 改變、且穩定 1.5s 時才提（避免瀏覽/預覽/搜尋時亂跳），且房內不只自己一人。
+        MaybeRemindViewersLoading(vid) {
+            try {
+                const now = Date.now();
+                if (vid !== this._vtSyncedVid) {
+                    // 切換到新的同步影片：開始等待，先不依「切換當下人數」判斷。
+                    // 因為換頁/切片時房間人數會短暫掉回 1 人，過幾秒才恢復，所以改成「等人數回來再提」。
+                    this._vtSyncedVid = vid;
+                    this._vtSyncedSince = now;
+                    this._vtViewersReminded = false;
+                    return;
+                }
+                if (this._vtViewersReminded) return;
+                const age = now - (this._vtSyncedSince || 0);
+                if (age < 1500) return;                                   // 防抖：穩定 1.5s（避免瀏覽/預覽/搜尋亂跳）
+                if (age > 20000) { this._vtViewersReminded = true; return; } // 20s 內都沒湊到 2 人 → 放棄（視為獨自觀看）
+                if (!(this.ctxMemberCount > 1)) return;                   // 等人數恢復到 >1 才提（解換頁人數暫掉到 1 的問題）
+                this._vtViewersReminded = true;
+                this.UpdateStatusText("Video changed — give viewers ~5s to load", "", 5500);
+            } catch (_) { }
+        }
+
         MaybeDemoteOnTakeover(e) {
             try {
                 let msg = (e && e.message) ? e.message : ("" + e);
@@ -5240,6 +5263,7 @@
                                 this.getLocalTimestamp());
                             throw new Error("No syncable video detected yet");
                         } else {
+                            this.MaybeRemindViewersLoading(video.id);
                             sendMessageToTop(MessageType.SyncMasterVideo, {
                                 waitForLoadding: this.waitForLoadding,
                                 video: video,

@@ -15,6 +15,7 @@
     "err_room_not_exists": "Room does not exist",
     "err_other_host_syncing": "Another host is syncing",
     "host_handed_over": "Host handed over — now following the new host",
+    "viewers_loading_hint": "Video changed — give viewers ~5s to load",
     "exit_room_button": "Exit",
     "host_role": "Host · in control",
     "memeber_role": "Viewer · following",

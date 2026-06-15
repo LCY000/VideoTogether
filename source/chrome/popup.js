@@ -88,24 +88,32 @@
 
     strings = {
         'zh-cn': {
-            'enabled': "启用",
-            'disabled': "停用",
-            'refreshAfterChange': "启用或禁用后请刷新网页生效"
+            'toggle_label': "在此浏览器启用",
+            'state_on': "已开启",
+            'state_off': "已关闭",
+            'desc': "开启插件后，浏览器会出现 VideoTogether 面板，可和朋友同步观赏影片。关闭则完全不启用。",
+            'refreshAfterChange': "切换后请重新整理网页才会生效"
         },
         'zh-tw': {
-            'enabled': "啟用",
-            'disabled': "停用",
-            'refreshAfterChange': "啟用或停用後請重新整理網頁才會生效"
+            'toggle_label': "在此瀏覽器啟用",
+            'state_on': "已開啟",
+            'state_off': "已關閉",
+            'desc': "開啟插件後，瀏覽器會出現 VideoTogether 面板，可和朋友同步觀賞影片。關閉則完全不啟用。",
+            'refreshAfterChange': "切換後請重新整理網頁才會生效"
         },
         'ja-jp': {
-            'enabled': "有効",
-            'disabled': "無効",
+            'toggle_label': "このブラウザで有効化",
+            'state_on': "オン",
+            'state_off': "オフ",
+            'desc': "有効にすると、ブラウザに VideoTogether パネルが表示され、友だちと動画を同期して視聴できます。オフのときは動作しません。",
             'refreshAfterChange': "変更後はページを再読み込みしてください"
         },
         'en-us': {
-            'enabled': "Enabled",
-            'disabled': "Disabled",
-            'refreshAfterChange': "Please refresh the page after change"
+            'toggle_label': "Enable in this browser",
+            'state_on': "On",
+            'state_off': "Off",
+            'desc': "When enabled, the VideoTogether panel appears in your browser so you can watch videos in sync with friends. When off, it stays inactive.",
+            'refreshAfterChange': "Please refresh the page after changing this"
         }
     }
 
@@ -138,8 +146,13 @@
 
     let updateText = () => {
         let checked = document.querySelector("#extensionSwitch").checked;
-        document.querySelector("#status").textContent = strings[language][checked ? 'enabled' : 'disabled'];
-        document.querySelector("#refreshAfterChange").textContent = strings[language]['refreshAfterChange'];
+        let s = strings[language];
+        document.querySelector("#toggleLabel").textContent = s['toggle_label'];
+        let st = document.querySelector("#stateText");
+        st.textContent = checked ? s['state_on'] : s['state_off'];
+        st.className = "vt-state " + (checked ? "on" : "off");
+        document.querySelector("#desc").textContent = s['desc'];
+        document.querySelector("#refreshAfterChange").textContent = s['refreshAfterChange'];
     }
     document.querySelector("#extensionSwitch").oninput = async (e) => {
         await getGM().setValue('vtEnabled', e.target.checked);
