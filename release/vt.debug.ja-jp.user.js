@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781494307
+// @version      1781503168
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -770,8 +770,10 @@
         // 用 role 判斷：退出房間時 exitRoom() 會先 setRole(Null)，飛行中的 tick 事後回來就不會把人數重畫進大廳（修殘留 bug）；
         // 在房內（房主/觀眾，role!=Null）照常渲染——比用 isInRoom 更早就緒，避免剛加入時第一筆人數被吞掉。
         if (extension.role === extension.RoleEnum.Null) return;
+        // 中文顯示「人」單位（如 1人）；其他語言只留數字，避免長字爆版
+        const unit = (language === 'zh-tw' || language === 'zh-cn') ? '人' : '';
         const icon = '<svg class="vt-mc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
-        updateInnnerHTML(select('#memberCount'), icon + '<span class="vt-mc-num">' + c + '</span>')
+        updateInnnerHTML(select('#memberCount'), icon + '<span class="vt-mc-num">' + c + unit + '</span>')
     }
 
     function dsply(e, _show = true) {
@@ -2312,7 +2314,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    color: var(--vt-text);
+    color: var(--vt-muted);
     white-space: nowrap;
   }
 
@@ -2321,14 +2323,51 @@
     display: block;
   }
 
+  /* 角色：純色字 + 前置脈動圓點（房主藍／觀眾灰）。用相同 3-ID 選擇器才蓋得過原膠囊規則 */
   #videoTogetherFlyPannel #vtStatusBar #videoTogetherRoleText:not(:empty) {
-    padding: 2px 9px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--vt-accent) 15%, transparent);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
     border: 0;
     color: var(--vt-accent);
-    font-size: 12px;
+    font-size: 13px;
     white-space: nowrap;
+  }
+
+  #videoTogetherFlyPannel #vtStatusBar #videoTogetherRoleText:not(:empty)::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: 0 0 auto;
+    animation: vt-rolepulse 2s ease-in-out infinite;
+  }
+
+  /* 觀眾＝灰字 + 灰脈動點（setRole 標 data-role="viewer"），左色條也轉灰 */
+  #videoTogetherFlyPannel #vtStatusBar #videoTogetherRoleText[data-role="viewer"] {
+    color: var(--vt-muted);
+  }
+
+  #videoTogetherFlyPannel #vtStatusBar #videoTogetherRoleText[data-role="viewer"]::before {
+    animation: vt-rolepulse-grey 2s ease-in-out infinite;
+  }
+
+  #vtRoomCard.vt-roomcard--active:has(#videoTogetherRoleText[data-role="viewer"]) {
+    border-left-color: var(--vt-muted);
+  }
+
+  @keyframes vt-rolepulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--vt-accent) 45%, transparent); }
+    50%      { box-shadow: 0 0 0 5px transparent; }
+  }
+
+  @keyframes vt-rolepulse-grey {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--vt-muted) 42%, transparent); }
+    50%      { box-shadow: 0 0 0 5px transparent; }
   }
 
   #videoTogetherFlyPannel #videoTogetherStatusText {
@@ -2769,11 +2808,14 @@
     display: flex;
     flex-direction: column;
     align-self: stretch;
-    margin: 0;
-    padding: 2px 18px 0;
-    background: transparent;
-    border: 0;
+    margin: 2px 18px 0;
+    padding: 10px 12px;
     box-sizing: border-box;
+    background: color-mix(in srgb, var(--vt-accent) 5%, transparent);
+    border: 1px solid var(--vt-border);
+    border-left: 4px solid var(--vt-accent);
+    /* 觀眾時左色條轉灰（見 #videoTogetherRoleText[data-role="viewer"] 的 :has 規則） */
+    border-radius: 12px;
   }
 
   /* 房內：文字「房間」收起，改用 home icon */
@@ -2808,12 +2850,14 @@
     height: 28px;
   }
 
-  /* 第二排：人數 + 角色靠左，與房號列之間用細分隔線 */
+  /* 第二排：人數 + 角色靠左，無分隔線、可換行（角色翻譯超長時掉第二行不被裁切） */
   #vtRoomCard.vt-roomcard--active #vtStatusBar {
     justify-content: flex-start;
-    margin: 9px 0 0;
-    padding-top: 9px;
-    border-top: 1px solid var(--vt-border);
+    flex-wrap: wrap;
+    gap: 11px;
+    margin: 7px 0 0;
+    padding-top: 0;
+    border-top: 0;
     min-height: 0;
   }
 
@@ -3815,7 +3859,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781494307';
+            this.version = '1781503168';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3964,19 +4008,21 @@
         }
 
         setRole(role) {
-            let setRoleText = text => {
-                updateInnnerHTML(window.videoTogetherFlyPannel.videoTogetherRoleText, text);
-            }
+            let el = window.videoTogetherFlyPannel.videoTogetherRoleText;
+            let setRoleText = text => { updateInnnerHTML(el, text); }
             this.role = role
             switch (role) {
                 case this.RoleEnum.Master:
-                    setRoleText("ホスト（操作中）");
+                    setRoleText("ホスト · 操作中");
+                    el.dataset.role = 'host';   // 房主＝藍字藍點藍色條
                     break;
                 case this.RoleEnum.Member:
-                    setRoleText("視聴者（追従）");
+                    setRoleText("視聴者 · 追従");
+                    el.dataset.role = 'viewer'; // 觀眾＝灰字灰點，左色條轉灰
                     break;
                 default:
                     setRoleText("");
+                    delete el.dataset.role;
                     break;
             }
         }

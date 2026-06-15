@@ -374,7 +374,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    color: var(--vt-text);
+    color: var(--vt-muted);
     white-space: nowrap;
   }
 
@@ -383,14 +383,51 @@
     display: block;
   }
 
+  /* 角色：純色字 + 前置脈動圓點（房主藍／觀眾灰）。用相同 3-ID 選擇器才蓋得過原膠囊規則 */
   #videoTogetherFlyPannel #vtStatusBar #videoTogetherRoleText:not(:empty) {
-    padding: 2px 9px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--vt-accent) 15%, transparent);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
     border: 0;
     color: var(--vt-accent);
-    font-size: 12px;
+    font-size: 13px;
     white-space: nowrap;
+  }
+
+  #videoTogetherFlyPannel #vtStatusBar #videoTogetherRoleText:not(:empty)::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: 0 0 auto;
+    animation: vt-rolepulse 2s ease-in-out infinite;
+  }
+
+  /* 觀眾＝灰字 + 灰脈動點（setRole 標 data-role="viewer"），左色條也轉灰 */
+  #videoTogetherFlyPannel #vtStatusBar #videoTogetherRoleText[data-role="viewer"] {
+    color: var(--vt-muted);
+  }
+
+  #videoTogetherFlyPannel #vtStatusBar #videoTogetherRoleText[data-role="viewer"]::before {
+    animation: vt-rolepulse-grey 2s ease-in-out infinite;
+  }
+
+  #vtRoomCard.vt-roomcard--active:has(#videoTogetherRoleText[data-role="viewer"]) {
+    border-left-color: var(--vt-muted);
+  }
+
+  @keyframes vt-rolepulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--vt-accent) 45%, transparent); }
+    50%      { box-shadow: 0 0 0 5px transparent; }
+  }
+
+  @keyframes vt-rolepulse-grey {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--vt-muted) 42%, transparent); }
+    50%      { box-shadow: 0 0 0 5px transparent; }
   }
 
   #videoTogetherFlyPannel #videoTogetherStatusText {
@@ -831,11 +868,14 @@
     display: flex;
     flex-direction: column;
     align-self: stretch;
-    margin: 0;
-    padding: 2px 18px 0;
-    background: transparent;
-    border: 0;
+    margin: 2px 18px 0;
+    padding: 10px 12px;
     box-sizing: border-box;
+    background: color-mix(in srgb, var(--vt-accent) 5%, transparent);
+    border: 1px solid var(--vt-border);
+    border-left: 4px solid var(--vt-accent);
+    /* 觀眾時左色條轉灰（見 #videoTogetherRoleText[data-role="viewer"] 的 :has 規則） */
+    border-radius: 12px;
   }
 
   /* 房內：文字「房間」收起，改用 home icon */
@@ -870,12 +910,14 @@
     height: 28px;
   }
 
-  /* 第二排：人數 + 角色靠左，與房號列之間用細分隔線 */
+  /* 第二排：人數 + 角色靠左，無分隔線、可換行（角色翻譯超長時掉第二行不被裁切） */
   #vtRoomCard.vt-roomcard--active #vtStatusBar {
     justify-content: flex-start;
-    margin: 9px 0 0;
-    padding-top: 9px;
-    border-top: 1px solid var(--vt-border);
+    flex-wrap: wrap;
+    gap: 11px;
+    margin: 7px 0 0;
+    padding-top: 0;
+    border-top: 0;
     min-height: 0;
   }
 

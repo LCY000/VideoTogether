@@ -369,8 +369,10 @@
         // 用 role 判斷：退出房間時 exitRoom() 會先 setRole(Null)，飛行中的 tick 事後回來就不會把人數重畫進大廳（修殘留 bug）；
         // 在房內（房主/觀眾，role!=Null）照常渲染——比用 isInRoom 更早就緒，避免剛加入時第一筆人數被吞掉。
         if (extension.role === extension.RoleEnum.Null) return;
+        // 中文顯示「人」單位（如 1人）；其他語言只留數字，避免長字爆版
+        const unit = (language === 'zh-tw' || language === 'zh-cn') ? '人' : '';
         const icon = '<svg class="vt-mc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
-        updateInnnerHTML(select('#memberCount'), icon + '<span class="vt-mc-num">' + c + '</span>')
+        updateInnnerHTML(select('#memberCount'), icon + '<span class="vt-mc-num">' + c + unit + '</span>')
     }
 
     function dsply(e, _show = true) {
@@ -2202,19 +2204,21 @@
         }
 
         setRole(role) {
-            let setRoleText = text => {
-                updateInnnerHTML(window.videoTogetherFlyPannel.videoTogetherRoleText, text);
-            }
+            let el = window.videoTogetherFlyPannel.videoTogetherRoleText;
+            let setRoleText = text => { updateInnnerHTML(el, text); }
             this.role = role
             switch (role) {
                 case this.RoleEnum.Master:
                     setRoleText("{$host_role$}");
+                    el.dataset.role = 'host';   // 房主＝藍字藍點藍色條
                     break;
                 case this.RoleEnum.Member:
                     setRoleText("{$memeber_role$}");
+                    el.dataset.role = 'viewer'; // 觀眾＝灰字灰點，左色條轉灰
                     break;
                 default:
                     setRoleText("");
+                    delete el.dataset.role;
                     break;
             }
         }
