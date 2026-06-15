@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781503168
+// @version      1781505050
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -2315,6 +2315,7 @@
     align-items: center;
     gap: 5px;
     color: var(--vt-muted);
+    font-size: 13px;
     white-space: nowrap;
   }
 
@@ -2592,12 +2593,18 @@
     align-items: center;
     justify-content: center;
     gap: 9px;
-    /* 上方留白比下方多一點，補償 footer 的 border-top + padding，讓「標題→房號」與「密碼→按鈕」視覺間隔一致 */
+    /* 大廳：置中、上方留白比下方多一點，讓「標題→房號」與「密碼→按鈕」視覺間隔一致 */
     padding: 34px 0 24px;
     overflow-y: auto;
     font-size: 15px;
     color: var(--vt-text);
     background-size: cover;
+  }
+
+  /* 房內：內容靠上，讓狀態卡貼近標題列（大廳維持置中）；卡片與下方狀態文字保留呼吸 */
+  #videoTogetherFlyPannel .vt-modal-body:has(#vtRoomCard.vt-roomcard--active) {
+    justify-content: flex-start;
+    padding-top: 14px;
   }
 
   .vt-modal-footer {
@@ -2808,7 +2815,7 @@
     display: flex;
     flex-direction: column;
     align-self: stretch;
-    margin: 2px 18px 0;
+    margin: 2px 18px 7px;
     padding: 10px 12px;
     box-sizing: border-box;
     background: color-mix(in srgb, var(--vt-accent) 5%, transparent);
@@ -2842,12 +2849,15 @@
     padding: 0;
   }
 
-  /* 🔗 連結釘在房號列最右 */
+  /* 🔗 連結釘在房號列最右，icon 在 28×28 鈕內置中（原本沒置中所以偏左上） */
   #vtRoomCard.vt-roomcard--active #vtInviteBtn {
     margin-left: auto;
     flex: 0 0 auto;
     width: 28px;
     height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   /* 第二排：人數 + 角色靠左，無分隔線、可換行（角色翻譯超長時掉第二行不被裁切） */
@@ -3859,7 +3869,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781503168';
+            this.version = '1781505050';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
