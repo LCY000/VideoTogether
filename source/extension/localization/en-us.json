@@ -40,6 +40,7 @@
     "room_uuid_missing": "uuid is missing",
     "wait_for_memeber_loadding": "wait for memeber loading",
     "easy_share_link_copied": "Room link copied",
+    "room_name_copied": "Room name copied",
     "easy_share_link_copy_failed": "Copy failed",
     "easy_share_line_template": "Click the link to watch together with me: <main_share_link>",
     "video_not_supported": "Can't sync this video",

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781505050
+// @version      1781527671
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -765,15 +765,24 @@
         }
     }
 
+    // 人數區塊 HTML：icon 永遠在；數字放 .vt-mc-num（CSS 給固定保留寬）。
+    // c 為 null/undefined 時只畫 icon＋保留位（剛進房、人數還沒讀到時用），讀到後填入數字，角色文字不會跳位。
+    function memberCountInner(c) {
+        // 中文顯示「人」單位（如 1 人，數字與「人」間留一個空格）；其他語言只留數字，避免長字爆版
+        const unit = (language === 'zh-tw' || language === 'zh-cn') ? '人' : '';
+        const icon = '<svg class="vt-mc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+        const has = !(c === null || c === undefined || c === '');
+        const num = has ? (unit ? (c + ' ' + unit) : ('' + c)) : '';
+        const cls = unit ? 'vt-mc-num vt-mc-cjk' : 'vt-mc-num';
+        return icon + '<span class="' + cls + '">' + num + '</span>';
+    }
+
     function changeMemberCount(c) {
         extension.ctxMemberCount = c;
         // 用 role 判斷：退出房間時 exitRoom() 會先 setRole(Null)，飛行中的 tick 事後回來就不會把人數重畫進大廳（修殘留 bug）；
         // 在房內（房主/觀眾，role!=Null）照常渲染——比用 isInRoom 更早就緒，避免剛加入時第一筆人數被吞掉。
         if (extension.role === extension.RoleEnum.Null) return;
-        // 中文顯示「人」單位（如 1人）；其他語言只留數字，避免長字爆版
-        const unit = (language === 'zh-tw' || language === 'zh-cn') ? '人' : '';
-        const icon = '<svg class="vt-mc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
-        updateInnnerHTML(select('#memberCount'), icon + '<span class="vt-mc-num">' + c + unit + '</span>')
+        updateInnnerHTML(select('#memberCount'), memberCountInner(c));
     }
 
     function dsply(e, _show = true) {
@@ -2207,12 +2216,12 @@
     font-family: ui-rounded, "Hiragino Maru Gothic ProN", "PingFang TC", "Microsoft JhengHei", "Segoe UI", system-ui, sans-serif;
     --vt-radius: 16px;
     /* 深色（預設）— 深藍玻璃，統一藍色調 */
-    --vt-bg: rgba(24, 24, 28, 0.75);
-    --vt-text: #f1f1f4;
-    --vt-muted: #9b9ba4;
-    --vt-border: rgba(255, 255, 255, 0.10);
-    --vt-field: rgba(255, 255, 255, 0.06);
-    --vt-hover: rgba(255, 255, 255, 0.12);
+    --vt-bg: rgba(19, 23, 33, 0.78);
+    --vt-text: #eef1f8;
+    --vt-muted: #a6b1ca;
+    --vt-border: rgba(150, 175, 255, 0.18);
+    --vt-field: rgba(120, 150, 255, 0.10);
+    --vt-hover: rgba(140, 165, 255, 0.16);
     --vt-accent: #5b8def;
     --vt-grad: linear-gradient(135deg, #5b8def 0%, #4a78e0 100%);
     --vt-ok: #6fa6ff;
@@ -2223,7 +2232,7 @@
   /* 淺色：跟隨系統（未手動指定時） */
   @media (prefers-color-scheme: light) {
     :host {
-      --vt-bg: rgba(247, 250, 255, 0.70);
+      --vt-bg: rgba(247, 250, 255, 0.80);
       --vt-text: #14203c;
       --vt-muted: #5b6a8c;
       --vt-border: rgba(20, 45, 90, 0.12);
@@ -2239,12 +2248,12 @@
 
   /* 手動切換，優先於系統 */
   :host([data-vt-theme="dark"]) {
-    --vt-bg: rgba(24, 24, 28, 0.75);
-    --vt-text: #f1f1f4;
-    --vt-muted: #9b9ba4;
-    --vt-border: rgba(255, 255, 255, 0.10);
-    --vt-field: rgba(255, 255, 255, 0.06);
-    --vt-hover: rgba(255, 255, 255, 0.12);
+    --vt-bg: rgba(19, 23, 33, 0.78);
+    --vt-text: #eef1f8;
+    --vt-muted: #a6b1ca;
+    --vt-border: rgba(150, 175, 255, 0.18);
+    --vt-field: rgba(120, 150, 255, 0.10);
+    --vt-hover: rgba(140, 165, 255, 0.16);
     --vt-accent: #5b8def;
     --vt-grad: linear-gradient(135deg, #5b8def 0%, #4a78e0 100%);
     --vt-ok: #6fa6ff;
@@ -2253,7 +2262,7 @@
   }
 
   :host([data-vt-theme="light"]) {
-    --vt-bg: rgba(247, 250, 255, 0.70);
+    --vt-bg: rgba(247, 250, 255, 0.80);
     --vt-text: #14203c;
     --vt-muted: #5b6a8c;
     --vt-border: rgba(20, 45, 90, 0.12);
@@ -2322,6 +2331,17 @@
   #videoTogetherFlyPannel #vtStatusBar #memberCount .vt-mc-icon {
     color: var(--vt-muted);
     display: block;
+  }
+
+  /* 數字保留固定寬：人數讀到前先空著、讀到後填入，角色文字不跳位（icon 由 JS 一進房就畫出） */
+  #videoTogetherFlyPannel #vtStatusBar #memberCount .vt-mc-num {
+    display: inline-block;
+    text-align: left;
+    min-width: 1.7em;
+  }
+
+  #videoTogetherFlyPannel #vtStatusBar #memberCount .vt-mc-num.vt-mc-cjk {
+    min-width: 2.8em;
   }
 
   /* 角色：純色字 + 前置脈動圓點（房主藍／觀眾灰）。用相同 3-ID 選擇器才蓋得過原膠囊規則 */
@@ -2839,19 +2859,39 @@
     padding: 0;
     margin: 0;
     width: 100%;
+    /* 房內整列可點＝複製房間名稱（🔗 例外，由 vt.js 的 handler 排除） */
+    cursor: pointer;
   }
 
-  /* 房號＝主角：放大加粗、字距拉開 */
+  /* 房號＝主角：放大加粗、字距拉開。
+     ⚠️ 關鍵：input 預設有 size=20 的內建寬度(~180px)，配上 #videoTogetherRoomNameInput 的
+     flex:1 1 auto 會撐爆房號列、把 🔗 擠出卡片右緣。房內房號是唯讀文字，改成 fit-content
+     收成內容寬，🔗 才會留在卡片內。 */
   #vtRoomCard.vt-roomcard--active #videoTogetherRoomNameInput:disabled {
     font-size: 17px;
     font-weight: 700;
-    letter-spacing: 0.4px;
+    /* 數字不加字距(原 0.4px→0)：長房號截斷時可多顯示一位數再 …；短房號幾乎看不出差別 */
+    letter-spacing: 0;
     padding: 0;
+    /* 短房名→靠左顯示、🔗 靠右；長房名→input 撐滿整列直到 🔗 前才以「…」截斷
+       （用 flex:1 1 auto 填滿可用寬度；若用 fit-content，長名時文字填不滿、… 會離 🔗 太遠）。
+       min-width:0 + flex-shrink 確保永遠讓得出空間給 🔗，🔗 不會被擠出卡片。 */
+    flex: 1 1 auto;
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* disabled input 不接收點擊；設 pointer-events:none 讓點擊穿透到 #vtRoomField，
+       由它的 onclick 複製完整房間名稱（見 vt.js）。 */
+    pointer-events: none;
   }
 
-  /* 🔗 連結釘在房號列最右，icon 在 28×28 鈕內置中（原本沒置中所以偏左上） */
+  /* 🔗 連結置於房號列最右、留在卡片內：房號 input 用 flex-grow 撐滿，自然把 🔗 頂到右端。
+     「文字/…→🔗」間距 = .vt-field--inroom 的 8px gap（不再加 margin），讓長房號能多顯示一點字。
+     icon 在 28×28 鈕內置中，hover 時由 .vt-modal-title-button:hover 給圓角底色＝ghost 按鈕 */
   #vtRoomCard.vt-roomcard--active #vtInviteBtn {
-    margin-left: auto;
     flex: 0 0 auto;
     width: 28px;
     height: 28px;
@@ -3136,9 +3176,8 @@
     visibility: hidden;
     width: max-content;
     max-width: calc(100% - 32px);
-    background: rgba(28, 32, 50, 0.92);
-    -webkit-backdrop-filter: blur(12px) saturate(160%);
-    backdrop-filter: blur(12px) saturate(160%);
+    /* 用主題藍漸層，深淺色自動適配（accent 在兩個主題都是藍）；白字在藍底兩主題都夠對比 */
+    background: var(--vt-grad);
     color: #fff;
     text-align: center;
     padding: 9px 16px;
@@ -3151,8 +3190,8 @@
     font-size: 13px;
     font-weight: 600;
     letter-spacing: .2px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    border: 1px solid transparent;
+    box-shadow: 0 8px 22px rgba(47, 107, 219, 0.35);
     z-index: 999999;
   }
 
@@ -3364,6 +3403,19 @@
                         popupError("复制失败");
                     }
                 };
+                // 點房號列 → 複製「完整房間名稱」（即使顯示被 … 截斷，複製的仍是完整值，不必展開、無歧義）。
+                // 🔗 例外（有自己的複製連結動作）；大廳（房名 input 可編輯）不觸發，讓使用者正常輸入。
+                this.roomField = wrapper.querySelector('#vtRoomField');
+                if (this.roomField) this.roomField.onclick = async (e) => {
+                    if (e.target.closest('#vtInviteBtn')) return;
+                    if (!this.inputRoomName || !this.inputRoomName.disabled) return;
+                    try {
+                        await navigator.clipboard.writeText(this.inputRoomName.value);
+                        popupError("房间名称已复制");
+                    } catch {
+                        popupError("复制失败");
+                    }
+                };
                 this.callErrorBtn.onclick = () => {
                     Voice.join("", window.videoTogetherExtension.roomName);
                 }
@@ -3422,6 +3474,23 @@
                 this.videoTogetherSetting = wrapper.querySelector("#videoTogetherSetting");
                 this.inputRoomName = wrapper.querySelector('#videoTogetherRoomNameInput');
                 this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPdIpt");
+                const keepRoomNameCollapsed = () => {
+                    if (!this.inputRoomName || !this.inputRoomName.disabled) return;
+                    this.inputRoomName.blur();
+                    this.inputRoomName.scrollLeft = 0;
+                    requestAnimationFrame(() => {
+                        if (!this.inputRoomName || !this.inputRoomName.disabled) return;
+                        this.inputRoomName.blur();
+                        this.inputRoomName.scrollLeft = 0;
+                    });
+                };
+                if (this.roomField) this.roomField.addEventListener('mousedown', (e) => {
+                    if (e.target.closest('#vtInviteBtn')) return;
+                    if (!this.inputRoomName || !this.inputRoomName.disabled) return;
+                    e.preventDefault();
+                    keepRoomNameCollapsed();
+                }, true);
+                this.inputRoomName.addEventListener('focus', keepRoomNameCollapsed);
                 this.inputRoomNameLabel = wrapper.querySelector('#videoTogetherRoomNameLabel');
                 this.inputRoomPasswordLabel = wrapper.querySelector("#videoTogetherRoomPasswordLabel");
                 // 大廳「房間/密碼」標籤等寬，讓兩個輸入框對齊（中文兩字本來就齊；英日標籤長度不同需補齊）
@@ -3638,9 +3707,14 @@
             } catch { };
             this.Maximize();
             this.inputRoomName.disabled = true;
+            this.inputRoomName.blur();
+            this.inputRoomName.scrollLeft = 0;
             let rf = this.wrapper.querySelector('#vtRoomField'); if (rf) rf.classList.add('vt-field--inroom');
             let rc = this.wrapper.querySelector('#vtRoomCard'); if (rc) rc.classList.add('vt-roomcard--active');
             let ib = this.wrapper.querySelector('#vtInviteBtn'); if (ib) show(ib);
+            // 進房先畫出人數 icon＋保留數字位（人數還沒讀到時不留空），避免角色文字先靠左、人數讀到後才往右跳
+            let mcEl = this.wrapper.querySelector('#memberCount');
+            if (mcEl) updateInnnerHTML(mcEl, memberCountInner(null));
             hide(this.lobbyBtnGroup)
             show(this.roomButtonGroup);
             this.exitButton.style = "";
@@ -3699,7 +3773,12 @@
             window.open(url, '_blank');
         }
 
-        UpdateStatusText(text, color) {
+        UpdateStatusText(text, color, holdMs) {
+            // 「需停留」訊息（如「已交接給新房主」）在 holdMs 毫秒內不被例行影片狀態（同步成功/尚未偵測到影片…）覆蓋；
+            // 只有下一個同樣帶 holdMs 的訊息能在停留期內覆蓋它。
+            const _now = Date.now();
+            if (!holdMs && this._statusHoldUntil && _now < this._statusHoldUntil) return;
+            this._statusHoldUntil = holdMs ? (_now + holdMs) : 0;
             // 取訊息字串並去掉 "Error:" 前綴，避免把整個 Error 物件秀出來
             let msg = (text && text.message) ? text.message : ("" + text);
             msg = msg.replace(/^Error:\s*/i, "");
@@ -3869,7 +3948,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781505050';
+            this.version = '1781527671';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -4045,7 +4124,7 @@
                 let msg = (e && e.message) ? e.message : ("" + e);
                 if (msg === "Other Host Is Syncing" && this.role === this.RoleEnum.Master) {
                     this.setRole(this.RoleEnum.Member);
-                    this.UpdateStatusText("已交接给新房主，改为跟随", "");
+                    this.UpdateStatusText("已交接给新房主，改为跟随", "", 7000);
                     return true;
                 }
             } catch (_) { }
@@ -4467,11 +4546,11 @@
 
         // end of download
 
-        UpdateStatusText(text, color) {
+        UpdateStatusText(text, color, holdMs) {
             if (window.self != window.top) {
-                sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color });
+                sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color, holdMs: holdMs });
             } else {
-                window.videoTogetherFlyPannel.UpdateStatusText(text + "", color);
+                window.videoTogetherFlyPannel.UpdateStatusText(text + "", color, holdMs);
             }
         }
 
@@ -4596,7 +4675,7 @@
                     this.duration = data["duration"];
                     break;
                 case MessageType.UpdateStatusText:
-                    window.videoTogetherFlyPannel.UpdateStatusText(data.text, data.color);
+                    window.videoTogetherFlyPannel.UpdateStatusText(data.text, data.color, data.holdMs);
                     break;
                 case MessageType.JumpToNewPage:
                     window.location = data.url;

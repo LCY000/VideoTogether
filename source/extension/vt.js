@@ -364,15 +364,24 @@
         }
     }
 
+    // 人數區塊 HTML：icon 永遠在；數字放 .vt-mc-num（CSS 給固定保留寬）。
+    // c 為 null/undefined 時只畫 icon＋保留位（剛進房、人數還沒讀到時用），讀到後填入數字，角色文字不會跳位。
+    function memberCountInner(c) {
+        // 中文顯示「人」單位（如 1 人，數字與「人」間留一個空格）；其他語言只留數字，避免長字爆版
+        const unit = (language === 'zh-tw' || language === 'zh-cn') ? '人' : '';
+        const icon = '<svg class="vt-mc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+        const has = !(c === null || c === undefined || c === '');
+        const num = has ? (unit ? (c + ' ' + unit) : ('' + c)) : '';
+        const cls = unit ? 'vt-mc-num vt-mc-cjk' : 'vt-mc-num';
+        return icon + '<span class="' + cls + '">' + num + '</span>';
+    }
+
     function changeMemberCount(c) {
         extension.ctxMemberCount = c;
         // 用 role 判斷：退出房間時 exitRoom() 會先 setRole(Null)，飛行中的 tick 事後回來就不會把人數重畫進大廳（修殘留 bug）；
         // 在房內（房主/觀眾，role!=Null）照常渲染——比用 isInRoom 更早就緒，避免剛加入時第一筆人數被吞掉。
         if (extension.role === extension.RoleEnum.Null) return;
-        // 中文顯示「人」單位（如 1人）；其他語言只留數字，避免長字爆版
-        const unit = (language === 'zh-tw' || language === 'zh-cn') ? '人' : '';
-        const icon = '<svg class="vt-mc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
-        updateInnnerHTML(select('#memberCount'), icon + '<span class="vt-mc-num">' + c + unit + '</span>')
+        updateInnnerHTML(select('#memberCount'), memberCountInner(c));
     }
 
     function dsply(e, _show = true) {
@@ -1550,6 +1559,19 @@
                         popupError("{$easy_share_link_copy_failed$}");
                     }
                 };
+                // 點房號列 → 複製「完整房間名稱」（即使顯示被 … 截斷，複製的仍是完整值，不必展開、無歧義）。
+                // 🔗 例外（有自己的複製連結動作）；大廳（房名 input 可編輯）不觸發，讓使用者正常輸入。
+                this.roomField = wrapper.querySelector('#vtRoomField');
+                if (this.roomField) this.roomField.onclick = async (e) => {
+                    if (e.target.closest('#vtInviteBtn')) return;
+                    if (!this.inputRoomName || !this.inputRoomName.disabled) return;
+                    try {
+                        await navigator.clipboard.writeText(this.inputRoomName.value);
+                        popupError("{$room_name_copied$}");
+                    } catch {
+                        popupError("{$easy_share_link_copy_failed$}");
+                    }
+                };
                 this.callErrorBtn.onclick = () => {
                     Voice.join("", window.videoTogetherExtension.roomName);
                 }
@@ -1608,6 +1630,23 @@
                 this.videoTogetherSetting = wrapper.querySelector("#videoTogetherSetting");
                 this.inputRoomName = wrapper.querySelector('#videoTogetherRoomNameInput');
                 this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPdIpt");
+                const keepRoomNameCollapsed = () => {
+                    if (!this.inputRoomName || !this.inputRoomName.disabled) return;
+                    this.inputRoomName.blur();
+                    this.inputRoomName.scrollLeft = 0;
+                    requestAnimationFrame(() => {
+                        if (!this.inputRoomName || !this.inputRoomName.disabled) return;
+                        this.inputRoomName.blur();
+                        this.inputRoomName.scrollLeft = 0;
+                    });
+                };
+                if (this.roomField) this.roomField.addEventListener('mousedown', (e) => {
+                    if (e.target.closest('#vtInviteBtn')) return;
+                    if (!this.inputRoomName || !this.inputRoomName.disabled) return;
+                    e.preventDefault();
+                    keepRoomNameCollapsed();
+                }, true);
+                this.inputRoomName.addEventListener('focus', keepRoomNameCollapsed);
                 this.inputRoomNameLabel = wrapper.querySelector('#videoTogetherRoomNameLabel');
                 this.inputRoomPasswordLabel = wrapper.querySelector("#videoTogetherRoomPasswordLabel");
                 // 大廳「房間/密碼」標籤等寬，讓兩個輸入框對齊（中文兩字本來就齊；英日標籤長度不同需補齊）
@@ -1824,9 +1863,14 @@
             } catch { };
             this.Maximize();
             this.inputRoomName.disabled = true;
+            this.inputRoomName.blur();
+            this.inputRoomName.scrollLeft = 0;
             let rf = this.wrapper.querySelector('#vtRoomField'); if (rf) rf.classList.add('vt-field--inroom');
             let rc = this.wrapper.querySelector('#vtRoomCard'); if (rc) rc.classList.add('vt-roomcard--active');
             let ib = this.wrapper.querySelector('#vtInviteBtn'); if (ib) show(ib);
+            // 進房先畫出人數 icon＋保留數字位（人數還沒讀到時不留空），避免角色文字先靠左、人數讀到後才往右跳
+            let mcEl = this.wrapper.querySelector('#memberCount');
+            if (mcEl) updateInnnerHTML(mcEl, memberCountInner(null));
             hide(this.lobbyBtnGroup)
             show(this.roomButtonGroup);
             this.exitButton.style = "";
@@ -1885,7 +1929,12 @@
             window.open(url, '_blank');
         }
 
-        UpdateStatusText(text, color) {
+        UpdateStatusText(text, color, holdMs) {
+            // 「需停留」訊息（如「已交接給新房主」）在 holdMs 毫秒內不被例行影片狀態（同步成功/尚未偵測到影片…）覆蓋；
+            // 只有下一個同樣帶 holdMs 的訊息能在停留期內覆蓋它。
+            const _now = Date.now();
+            if (!holdMs && this._statusHoldUntil && _now < this._statusHoldUntil) return;
+            this._statusHoldUntil = holdMs ? (_now + holdMs) : 0;
             // 取訊息字串並去掉 "Error:" 前綴，避免把整個 Error 物件秀出來
             let msg = (text && text.message) ? text.message : ("" + text);
             msg = msg.replace(/^Error:\s*/i, "");
@@ -2231,7 +2280,7 @@
                 let msg = (e && e.message) ? e.message : ("" + e);
                 if (msg === "Other Host Is Syncing" && this.role === this.RoleEnum.Master) {
                     this.setRole(this.RoleEnum.Member);
-                    this.UpdateStatusText("{$host_handed_over$}", "");
+                    this.UpdateStatusText("{$host_handed_over$}", "", 7000);
                     return true;
                 }
             } catch (_) { }
@@ -2653,11 +2702,11 @@
 
         // end of download
 
-        UpdateStatusText(text, color) {
+        UpdateStatusText(text, color, holdMs) {
             if (window.self != window.top) {
-                sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color });
+                sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color, holdMs: holdMs });
             } else {
-                window.videoTogetherFlyPannel.UpdateStatusText(text + "", color);
+                window.videoTogetherFlyPannel.UpdateStatusText(text + "", color, holdMs);
             }
         }
 
@@ -2782,7 +2831,7 @@
                     this.duration = data["duration"];
                     break;
                 case MessageType.UpdateStatusText:
-                    window.videoTogetherFlyPannel.UpdateStatusText(data.text, data.color);
+                    window.videoTogetherFlyPannel.UpdateStatusText(data.text, data.color, data.holdMs);
                     break;
                 case MessageType.JumpToNewPage:
                     window.location = data.url;

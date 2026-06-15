@@ -40,6 +40,7 @@
     "room_uuid_missing": "uuidが見つかりません",
     "wait_for_memeber_loadding": "メンバーの読み込み中...",
     "easy_share_link_copied": "ルームリンクをコピーしました",
+    "room_name_copied": "ルーム名をコピーしました",
     "easy_share_link_copy_failed": "コピーに失敗しました",
     "easy_share_line_template": "リンクをクリックして一緒に視聴しましょう：<main_share_link>",
     "video_not_supported": "この動画は同期できません",

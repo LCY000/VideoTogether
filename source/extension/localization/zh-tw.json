@@ -40,6 +40,7 @@
     "room_uuid_missing": "缺少 uuid",
     "wait_for_memeber_loadding": "等待成員載入影片",
     "easy_share_link_copied": "房間連結已複製",
+    "room_name_copied": "房間名稱已複製",
     "easy_share_link_copy_failed": "複製失敗",
     "easy_share_line_template": "點這個連結，和我一起看：<main_share_link> ，打不開可試備用連結：<china_share_link>",
     "video_not_supported": "這個影片無法同步",
