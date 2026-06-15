@@ -15,7 +15,7 @@
     "err_room_not_exists": "房间不存在",
     "err_other_host_syncing": "其他房主正在同步",
     "host_handed_over": "已交接给新房主，改为跟随",
-    "viewers_loading_hint": "已切换影片，稍等观众载入（约 5 秒）",
+    "viewers_loading_hint": "稍等观众载入(约5秒)",
     "exit_room_button": "退 出",
     "host_role": "房主 · 控制中",
     "memeber_role": "观众 · 跟随",

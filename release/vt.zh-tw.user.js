@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781531428
+// @version      1781541228
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -778,10 +778,23 @@
     }
 
     function changeMemberCount(c) {
-        extension.ctxMemberCount = c;
-        // 用 role 判斷：退出房間時 exitRoom() 會先 setRole(Null)，飛行中的 tick 事後回來就不會把人數重畫進大廳（修殘留 bug）；
-        // 在房內（房主/觀眾，role!=Null）照常渲染——比用 isInRoom 更早就緒，避免剛加入時第一筆人數被吞掉。
+        // 退出房間時 exitRoom() 會先 setRole(Null)，飛行中的 tick 事後回來就不會把人數重畫進大廳。
         if (extension.role === extension.RoleEnum.Null) return;
+        let now = Date.now();
+        // 換頁後最多凍結 10 秒：用「跳轉前的人數」擋住換頁延遲/伺服器「同URL才算」造成的暫時掉到 1 人。
+        // 凍結期內，伺服器回報「比目前低」就先不採用（等觀眾跟上）；持平或更高直接採用；超過 10 秒恢復照伺服器。
+        // 沒有可凍結的舊值（剛進房/第一筆）時不擋，照伺服器正常顯示 → 不會卡空白。
+        let held = extension._mcHoldUntil && now < extension._mcHoldUntil;
+        let prev = parseInt(extension.ctxMemberCount);
+        if (held && !isNaN(prev) && Number(c) < prev) {
+            return;
+        }
+        extension.ctxMemberCount = c;
+        // 記住「目前人數＋時間」，作為下次換頁要帶過去的『跳轉前人數』（同網域整頁重整也能還原；逾 10 秒視為過期）
+        try {
+            window.sessionStorage.setItem("VideoTogetherLastMemberCount", String(c));
+            window.sessionStorage.setItem("VideoTogetherLastMemberCountTime", String(now));
+        } catch (e) { }
         updateInnnerHTML(select('#memberCount'), memberCountInner(c));
     }
 
@@ -3712,9 +3725,27 @@
             let rf = this.wrapper.querySelector('#vtRoomField'); if (rf) rf.classList.add('vt-field--inroom');
             let rc = this.wrapper.querySelector('#vtRoomCard'); if (rc) rc.classList.add('vt-roomcard--active');
             let ib = this.wrapper.querySelector('#vtInviteBtn'); if (ib) show(ib);
-            // 進房先畫出人數 icon＋保留數字位（人數還沒讀到時不留空），避免角色文字先靠左、人數讀到後才往右跳
+            // 進房先畫出人數：若是「剛跳轉過來」(sessionStorage 有 10 秒內的人數)，帶上次人數＋啟動最多 10 秒凍結，
+            // 擋住換頁延遲時掉到 1 人；沒有近期紀錄就只畫 icon、讓伺服器正常回報（不會卡空白）。
             let mcEl = this.wrapper.querySelector('#memberCount');
-            if (mcEl) updateInnnerHTML(mcEl, memberCountInner(null));
+            if (mcEl) {
+                let lastMc = null, lastTime = 0;
+                try {
+                    lastMc = window.sessionStorage.getItem("VideoTogetherLastMemberCount");
+                    lastTime = parseFloat(window.sessionStorage.getItem("VideoTogetherLastMemberCountTime")) || 0;
+                } catch (e) { }
+                let recent = (lastMc != null && lastMc !== "" && (Date.now() - lastTime < 10000));
+                if (recent) {
+                    // guard：InRoom 可能在 panel 建構期(經 Init→RecoveryState)被呼叫，那時 extension 還沒指派
+                    if (typeof extension !== 'undefined' && extension) {
+                        extension.ctxMemberCount = lastMc;
+                        extension._mcHoldUntil = lastTime + 10000;
+                    }
+                    updateInnnerHTML(mcEl, memberCountInner(lastMc));
+                } else {
+                    updateInnnerHTML(mcEl, memberCountInner(null));
+                }
+            }
             hide(this.lobbyBtnGroup)
             show(this.roomButtonGroup);
             this.exitButton.style = "";
@@ -3742,6 +3773,17 @@
             // 用 this.wrapper（建構期 window.videoTogetherFlyPannel 尚未指派，不能用 select()）清空人數 + 收起房內元素
             let mc = this.wrapper.querySelector('#memberCount');
             if (mc) updateInnnerHTML(mc, '');
+            // 離開房間清掉記住的人數＋凍結狀態，避免下次進別的房先閃舊值或誤觸換頁凍結
+            try {
+                window.sessionStorage.removeItem("VideoTogetherLastMemberCount");
+                window.sessionStorage.removeItem("VideoTogetherLastMemberCountTime");
+            } catch (e) { }
+            // ⚠️ extension（VideoTogetherExtension 實例）在 panel 建構之後才指派；InLobby(true) 會在
+            //   panel 建構期就被呼叫，那時 extension 還是 undefined。必須 guard，否則建構丟例外 → panel=null → 全部按鈕失效。
+            if (typeof extension !== 'undefined' && extension) {
+                extension._mcHoldUntil = 0;
+                extension._lastHostUrl = undefined;
+            }
             let rf = this.wrapper.querySelector('#vtRoomField'); if (rf) rf.classList.remove('vt-field--inroom');
             let rc = this.wrapper.querySelector('#vtRoomCard'); if (rc) rc.classList.remove('vt-roomcard--active');
             let ib = this.wrapper.querySelector('#vtInviteBtn'); if (ib) hide(ib);
@@ -3948,7 +3990,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781531428';
+            this.version = '1781541228';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -4125,20 +4167,18 @@
             try {
                 const now = Date.now();
                 if (vid !== this._vtSyncedVid) {
-                    // 切換到新的同步影片：開始等待，先不依「切換當下人數」判斷。
-                    // 因為換頁/切片時房間人數會短暫掉回 1 人，過幾秒才恢復，所以改成「等人數回來再提」。
+                    // 切換到新的同步影片。人數已由 sessionStorage 在換頁時還原，切換當下即為正確值，
+                    // 故直接依當下人數判斷：只有自己 → 視為已提醒（不提）。
                     this._vtSyncedVid = vid;
                     this._vtSyncedSince = now;
-                    this._vtViewersReminded = false;
+                    this._vtViewersReminded = !(this.ctxMemberCount > 1);
                     return;
                 }
                 if (this._vtViewersReminded) return;
-                const age = now - (this._vtSyncedSince || 0);
-                if (age < 1500) return;                                   // 防抖：穩定 1.5s（避免瀏覽/預覽/搜尋亂跳）
-                if (age > 20000) { this._vtViewersReminded = true; return; } // 20s 內都沒湊到 2 人 → 放棄（視為獨自觀看）
-                if (!(this.ctxMemberCount > 1)) return;                   // 等人數恢復到 >1 才提（解換頁人數暫掉到 1 的問題）
+                if (now - (this._vtSyncedSince || 0) < 1500) return; // 防抖：穩定 1.5s（避免瀏覽/預覽/搜尋亂跳）
+                if (!(this.ctxMemberCount > 1)) return;              // 只有自己 → 不提
                 this._vtViewersReminded = true;
-                this.UpdateStatusText("已切換影片，稍等觀眾載入（約 5 秒）", "", 5500);
+                this.UpdateStatusText("稍等觀眾載入(約5秒)", "", 5500);
             } catch (_) { }
         }
 
@@ -5246,6 +5286,13 @@
                     case this.RoleEnum.Null:
                         return;
                     case this.RoleEnum.Master: {
+                        // 偵測房主換頁(含站內 SPA 換網址)：URL 一變就啟動最多 10 秒的人數凍結，
+                        // 用換頁前的人數擋住「換頁延遲 + 伺服器同URL才算」造成的暫時掉到 1 人。
+                        let _curUrl = this.linkWithoutState(window.location);
+                        if (this._lastHostUrl !== undefined && this._lastHostUrl !== _curUrl) {
+                            this._mcHoldUntil = Date.now() + 10000;
+                        }
+                        this._lastHostUrl = _curUrl;
                         if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                             let state = this.GetRoomState("");
                             sendMessageToTop(MessageType.SetTabStorage, state);

@@ -15,7 +15,7 @@
     "err_room_not_exists": "ルームが存在しません",
     "err_other_host_syncing": "他のホストが同期中です",
     "host_handed_over": "ホストを引き継ぎました。新しいホストに追従します",
-    "viewers_loading_hint": "動画を切り替えました。視聴者の読み込みに約5秒お待ちを",
+    "viewers_loading_hint": "視聴者の読み込みに約5秒お待ちを",
     "exit_room_button": "退出",
     "host_role": "ホスト · 操作中",
     "memeber_role": "視聴者 · 追従",
