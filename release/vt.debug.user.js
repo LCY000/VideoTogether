@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781615971
+// @version      1781616401
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -3990,7 +3990,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781615971';
+            this.version = '1781616401';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -5193,8 +5193,9 @@
             this._liveToastShown = false;
             this._liveProbe = undefined;
             this._liveGrowHits = 0;
-            this._liveKey = undefined;      // 解除影片鎖存（IsLiveStream 會重新判斷）
-            this._liveLatched = false;
+            this._liveKey = undefined;      // 解除遲滯狀態（IsLiveStream 會重新判斷）
+            this._liveState = false;
+            this._liveOffStreak = 0;
             this.setRole(this.RoleEnum.Null);
             window.videoTogetherFlyPannel.UpdateStatusText("", "");
             window.videoTogetherFlyPannel.InLobby();
@@ -5662,48 +5663,63 @@
         // YouTube 推回直播邊緣，來回震盪）。偵測到直播時，改為只同步播放/暫停、不碰 currentTime。
         IsLiveStream(videoDom) {
             try {
-                // 換影片/換頁就重置探測與鎖存：避免「直播→VOD（或反之）」沿用舊狀態誤判（含 codex 指出的
-                // 換台殘留）。key 取「頁面 URL + 影片來源」，YouTube 等 SPA 換片時 location.href（?v=）會變 → 自動重置。
+                // 換影片/換頁就整個重置：避免「直播↔VOD」沿用舊狀態誤判（codex 指出的換台殘留）。
+                // key=頁面URL+影片來源；YouTube 等 SPA 換片時 location.href（?v=）會變 → 自動重置。
                 const key = (typeof location !== "undefined" ? location.href : "")
                     + "|" + ((videoDom && (videoDom.currentSrc || videoDom.src)) || "");
                 if (key !== this._liveKey) {
                     this._liveKey = key;
                     this._liveProbe = undefined;
                     this._liveGrowHits = 0;
-                    this._liveLatched = false;
+                    this._liveState = false;
+                    this._liveOffStreak = 0;
                     this._liveToastShown = false; // 換到新影片 → 可再提示一次
                 }
-                // 已確認是直播就鎖住、穩定回 true：直播卡頓/緩衝時不會閃回「非直播」，
-                // 觀眾才不會在卡頓的那個 tick 又被房主 seek/暫停一下。換影片時上面的 key 變動會解除鎖存。
-                if (this._liveLatched) return true;
-                // 1) 通用·即時：duration 無限大/NaN（多數無 DVR 的 HLS/FLV 直播、YouTube 純直播）
-                if (videoDom && !isFinite(videoDom.duration)) { this._liveLatched = true; return true; }
-                // 2) 大平台·快速路徑：含 DVR（duration 有限且持續成長）的直播，用 DOM/host 瞬間判定最準
-                if (typeof document !== "undefined") {
+
+                // ── 這個 tick 的原始訊號：看起來像不像直播 ──
+                let raw = false;
+                const d = videoDom ? videoDom.duration : NaN;
+                if (d === Infinity) {
+                    // 1) 真·無限長度（無 DVR 直播）。只認 Infinity，不認 NaN：VOD 載入中 duration 會短暫是 NaN，
+                    //    若把 NaN 也當直播，一般影片載入瞬間就會被誤判（這正是「一般 YT 影片卡在直播」的主因）。
+                    raw = true;
+                } else if (typeof document !== "undefined") {
+                    // 2) 大平台快速路徑
                     const host = (typeof location !== "undefined" && location.hostname) || "";
-                    if (host === "live.bilibili.com" || host.endsWith(".live.bilibili.com")) { this._liveLatched = true; return true; } // B 站直播
-                    if (document.querySelector('.ytp-live-badge')) { this._liveLatched = true; return true; }                            // YouTube 直播徽章
+                    if (host === "live.bilibili.com" || host.endsWith(".live.bilibili.com")) {
+                        raw = true;
+                    } else {
+                        const badge = document.querySelector('.ytp-live-badge');
+                        // 必須「可見」才算：YouTube 的播放器常留著 display:none 的徽章，VOD 也查得到 →
+                        //  用 offsetWidth>0 排除隱藏徽章（自動隱藏控制列只改透明度、仍有寬度，不會誤判成非直播）。
+                        if (badge && badge.offsetWidth > 0) raw = true;
+                    }
                 }
-                // 3) 通用·啟發式（不需 per-site）：duration 隨真實時間持續成長 ⇒ 直播。
-                //    每 tick 取樣 (duration, 時間)，連續 2 次「以接近真實時間的速度成長」才判定，避免偶發抖動誤判 VOD。
-                if (videoDom && isFinite(videoDom.duration)) {
+                // 3) 通用啟發式（不需 per-site）：duration 持續成長 ⇒ 直播（NaN 不算，仍在載入）。
+                if (!raw && isFinite(d)) {
                     const now = Date.now();
-                    const d = videoDom.duration;
                     const s = this._liveProbe;
                     if (!s) {
                         this._liveProbe = { d, t: now };
                     } else if (now - s.t > 500) {
-                        const grew = d - s.d;
-                        const elapsed = (now - s.t) / 1000;
-                        if (grew > 0.5 * elapsed && grew > 0.2) {
-                            this._liveGrowHits = (this._liveGrowHits || 0) + 1;
-                        } else if (grew < 0.05) {
-                            this._liveGrowHits = 0; // 沒成長 → 視為 VOD
-                        }
+                        const grew = d - s.d, elapsed = (now - s.t) / 1000;
+                        if (grew > 0.5 * elapsed && grew > 0.2) this._liveGrowHits = (this._liveGrowHits || 0) + 1;
+                        else if (grew < 0.05) this._liveGrowHits = 0;
                         this._liveProbe = { d, t: now };
-                        if (this._liveGrowHits >= 2) { this._liveLatched = true; return true; }
+                        if (this._liveGrowHits >= 2) raw = true;
                     }
                 }
+
+                // ── 雙向遲滯：raw=true 立刻判直播；raw=false 要「連續 4 次（~4s）」才退出。
+                //    好處：直播卡頓那一兩 tick 不會閃回非直播；萬一誤判，也會在數秒內自癒，不會像硬鎖永久卡住。
+                if (raw) {
+                    this._liveOffStreak = 0;
+                    this._liveState = true;
+                } else if (this._liveState) {
+                    this._liveOffStreak = (this._liveOffStreak || 0) + 1;
+                    if (this._liveOffStreak >= 4) this._liveState = false;
+                }
+                return !!this._liveState;
             } catch (_) { }
             return false;
         }
