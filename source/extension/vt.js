@@ -1697,6 +1697,8 @@
                 this.statusText = wrapper.querySelector("#videoTogetherStatusText");
                 this.InLobby(true);
                 this.Init();
+                // Init 已用參考定案初始收/展後，再跑一次 autoCollapse：視窗過小時收成圖示（此時 videoTogether(FlyPannel|SamllIcon) 參考已就緒，不再對 undefined 操作）。
+                autoCollapse();
                 setInterval(() => {
                     this.ShowPannel();
                 }, 1000);
@@ -1881,11 +1883,28 @@
         }
 
         Init() {
-            let VideoTogetherMinimizedHere = localStorage.getItem("VideoTogetherMinimizedHere");
-            if (VideoTogetherMinimizedHere == 0) {
-                this.Maximize(true);
-            } else if (VideoTogetherMinimizedHere == 1) {
+            // 同步決定初始收/展，避免等非同步 sync 才收合造成「展→收」閃爍。
+            // 在房間（此時只能從 sessionStorage 同步得知；TabStorage 房間留待 firstSync 還原）→ 繼承 carried；
+            // 不在房間 → 看 MinimiseDefault 的 localStorage 鏡像（未知則收合，安全）。
+            let inRoom = false, carried = null;
+            try {
+                let ts = parseFloat(window.sessionStorage.getItem("VideoTogetherTimestamp"));
+                let rn = window.sessionStorage.getItem("VideoTogetherRoomName");
+                if (rn && !isNaN(ts) && ts + 60 >= Date.now() / 1000) {
+                    inRoom = true;
+                    carried = window.sessionStorage.getItem("VideoTogetherMinimized");
+                }
+            } catch (e) { }
+            let minimiseDefault = null;
+            try {
+                let m = window.localStorage.getItem("VideoTogetherMinimiseDefault");
+                if (m === "1") minimiseDefault = true;
+                else if (m === "0") minimiseDefault = false;
+            } catch (e) { }
+            if (VideoTogetherResolveMinimized({ inRoom: inRoom, carried: carried, minimiseDefault: minimiseDefault })) {
                 this.Minimize(true);
+            } else {
+                this.Maximize(true);
             }
         }
 
@@ -1893,7 +1912,8 @@
             try {
                 speechSynthesis.getVoices();
             } catch { };
-            this.Maximize();
+            // 收/展不再由 InRoom 決定：避免房主狀態傳染觀眾、避免每次還原都強制展開。
+            // 改由 Init / RecoveryState / firstSync 依「是否在房間 + carried/設定」決定。
             this.inputRoomName.disabled = true;
             this.inputRoomName.blur();
             this.inputRoomName.scrollLeft = 0;
@@ -3301,6 +3321,12 @@
                         window.videoTogetherFlyPannel.inputRoomName.value = vtRoomName;
                         window.videoTogetherFlyPannel.inputRoomPassword.value = password;
                         window.videoTogetherFlyPannel.InRoom();
+                        // 還原房間時套用 carried 收/展（缺失 → 展開）。getFunc 對應 TabStorage / sessionStorage / URL。
+                        if (VideoTogetherResolveMinimized({ inRoom: true, carried: getFunc("VideoTogetherMinimized") })) {
+                            window.videoTogetherFlyPannel.Minimize(true);
+                        } else {
+                            window.videoTogetherFlyPannel.Maximize(true);
+                        }
                         switch (voice) {
                             case VoiceStatus.MUTED:
                                 Voice.join("", vtRoomName, true);
