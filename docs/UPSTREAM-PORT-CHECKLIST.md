@@ -68,6 +68,20 @@
 - [x] 全專案品牌一律 **VideoTogether**——已確認 `source/` 內**無 AniméSync 等 fork 暫用名殘留**（只剩本檔提到該名作說明）。
 - [x] 授權：沿用上游 MIT，不另外宣告（無需改動）。
 
+## 7. 版本號（PR 時交給上游決定要不要 bump、怎麼定）
+
+版本號散在三個 manifest（各平台分開維護），userscript 則用 build 時間戳：
+
+| 位置 | 目前 | 說明 |
+| --- | --- | --- |
+| `source/chrome/manifest.json` | `3.1.0` | Chrome／Edge（mv3）。本 fork 從 `3.0.23` bump 到 `3.1.0`。 |
+| `source/safari/.../manifest.json` | `3.1.0` | Safari，與 chrome 同號。 |
+| `source/firefox/manifest.json` | `1.4.0` | Firefox **自成一條版本線**（沿用上游 AMO 歷史，與 chrome 的 3.x 不同）。本 fork 從 `1.3.65` bump 到 `1.4.0`，**未**強行對齊成 3.x。 |
+| userscript `@version`（`extension.js` 標頭）| `{{timestamp}}` | build 時自動填時間戳，非 semver，不用手動改。 |
+
+- [ ] **要不要 bump、bump 到多少，交給上游決定**：我們負責把功能改動帶上去；版本號請原作者依他的 semver 慣例（major／minor／patch）與各商店（Chrome Web Store／AMO）的版本連續性來定。
+- [ ] 若上游決定 bump：chrome／safari 通常同步一個號；firefox 是否併入同一條版本線（還是維持獨立 1.x）由上游決定。
+
 ---
 
 > 小抄：要把設定頁／品牌指回上游，主要改這幾處再重建即可——

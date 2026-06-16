@@ -67,6 +67,7 @@ then writes the results to `release/` and copies each browser's bundle into `sou
 - We `clone` it into `source/setting` so you can edit the **settings page and the extension together** — more convenient.
 - It's a nested independent git checkout: to change the settings page itself, commit / push inside `source/setting` (its **own** repo), not the main repo.
 - The build compiles it too (e.g. `source/setting/v3.buildme.html` → the settings-page output).
+- 📄 How the settings page and frontend **link up, and how to add a settings toggle**: see [SETTINGS-LINKAGE.md](../SETTINGS-LINKAGE.md).
 
 > `source/local` is the "watch local video files together" player (StreamSaver / hls.js); `source/website` is the website-embed build. **Neither is needed for extension / panel / sync work** — just pass `disable_network` to skip them (see below).
 
