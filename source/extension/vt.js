@@ -1697,8 +1697,6 @@
                 this.statusText = wrapper.querySelector("#videoTogetherStatusText");
                 this.InLobby(true);
                 this.Init();
-                // Init 已用參考定案初始收/展後，再跑一次 autoCollapse：視窗過小時收成圖示（此時 videoTogether(FlyPannel|SamllIcon) 參考已就緒，不再對 undefined 操作）。
-                autoCollapse();
                 setInterval(() => {
                     this.ShowPannel();
                 }, 1000);
@@ -1842,7 +1840,6 @@
             if (!isDefault) {
                 this.SaveIsMinimized(true);
             }
-            this.disableDefaultSize = true;
             hide(this.videoTogetherFlyPannel);
             show(this.videoTogetherSamllIcon);
         }
@@ -1852,7 +1849,6 @@
             if (!isDefault) {
                 this.SaveIsMinimized(false);
             }
-            this.disableDefaultSize = true;
             show(this.videoTogetherFlyPannel);
             hide(this.videoTogetherSamllIcon);
         }
@@ -3009,7 +3005,8 @@
                         // 不在房間 → 純看設定；在房間 → 已由上方 RecoveryState 依 carried 套好，這裡不覆寫。
                         // （this.role 在 RecoveryState 後即反映是否在房間。）Init 一律先收合，故這裡只會「維持收合」或「收→展」，不會「展→收」。
                         if (this.role == this.RoleEnum.Null) {
-                            if (data.MinimiseDefault) {
+                            // 用同一個決策函式（不在房間分支），讓 VideoTogetherResolveMinimized 成為收/展的單一來源
+                            if (VideoTogetherResolveMinimized({ inRoom: false, minimiseDefault: !!data.MinimiseDefault })) {
                                 window.videoTogetherFlyPannel.Minimize(true);
                             } else {
                                 window.videoTogetherFlyPannel.Maximize(true);
