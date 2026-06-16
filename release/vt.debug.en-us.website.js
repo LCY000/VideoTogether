@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781543831
+// @version      1781614828
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -3990,7 +3990,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781543831';
+            this.version = '1781614828';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -4139,22 +4139,44 @@
         }
 
         setRole(role) {
-            let el = window.videoTogetherFlyPannel.videoTogetherRoleText;
-            let setRoleText = text => { updateInnnerHTML(el, text); }
-            this.role = role
-            switch (role) {
+            this.role = role;
+            this.RefreshRoleText();
+        }
+
+        // 依「角色 + 是否直播」更新常駐角色列。直播時觀眾不再跟隨房主播放，故文字改成「直播各自控制」。
+        // 有 guard：面板尚未建好時略過（避免初始化期 null 崩潰）；之後 SetLiveContext 變化時會再刷新。
+        RefreshRoleText() {
+            let el = window.videoTogetherFlyPannel && window.videoTogetherFlyPannel.videoTogetherRoleText;
+            if (!el) return;
+            let live = !!this._ctxIsLive;
+            switch (this.role) {
                 case this.RoleEnum.Master:
-                    setRoleText("Host · in control");
+                    updateInnnerHTML(el, live ? "Host · Live (independent)" : "Host · in control");
                     el.dataset.role = 'host';   // 房主＝藍字藍點藍色條
                     break;
                 case this.RoleEnum.Member:
-                    setRoleText("Viewer · following");
+                    updateInnnerHTML(el, live ? "Viewer · Live (independent)" : "Viewer · following");
                     el.dataset.role = 'viewer'; // 觀眾＝灰字灰點，左色條轉灰
                     break;
                 default:
-                    setRoleText("");
+                    updateInnnerHTML(el, "");
                     delete el.dataset.role;
                     break;
+            }
+        }
+
+        // 由 host/member 的同步迴圈每個 tick 呼叫，傳入「自己畫面上的影片是不是直播」。
+        // 第一次進入直播跳一次短暫 toast（離開直播會重置，再進直播可再跳一次）；狀態變化時刷新常駐角色列。
+        SetLiveContext(isLive) {
+            isLive = !!isLive;
+            if (isLive && !this._ctxIsLive && !this._liveToastShown) {
+                this._liveToastShown = true;
+                this.UpdateStatusText("Live detected — playback is now independent", "", 5000);
+            }
+            if (!isLive) this._liveToastShown = false;
+            if (isLive !== this._ctxIsLive) {
+                this._ctxIsLive = isLive;
+                this.RefreshRoleText();
             }
         }
 
@@ -5166,6 +5188,10 @@
             window.videoTogetherFlyPannel.inputRoomName.value = "";
             window.videoTogetherFlyPannel.inputRoomPassword.value = "";
             this.roomName = "";
+            this._ctxIsLive = false;        // 重置直播狀態：下個房間重新判斷、toast 可再提示一次
+            this._liveToastShown = false;
+            this._liveProbe = undefined;
+            this._liveGrowHits = 0;
             this.setRole(this.RoleEnum.Null);
             window.videoTogetherFlyPannel.UpdateStatusText("", "");
             window.videoTogetherFlyPannel.InLobby();
@@ -5471,6 +5497,9 @@
                 }
             } catch { }
 
+            // 房主也偵測自己畫面上的影片是否直播，讓房主的常駐角色列同步顯示「直播各自控制」。
+            try { this.SetLiveContext(this.IsLiveStream(videoDom)); } catch (_) { }
+
             if (skipIntroLen() > 0 && videoDom.currentTime < skipIntroLen()) {
                 videoDom.currentTime = skipIntroLen();
             }
@@ -5630,10 +5659,34 @@
         // YouTube 推回直播邊緣，來回震盪）。偵測到直播時，改為只同步播放/暫停、不碰 currentTime。
         IsLiveStream(videoDom) {
             try {
-                // 1) 經典直播：duration 為無限大（多數 HLS/DASH 直播、YouTube 無 DVR 的純直播）
+                // 1) 通用·即時：duration 無限大/NaN（多數無 DVR 的 HLS/FLV 直播、YouTube 純直播）
                 if (videoDom && !isFinite(videoDom.duration)) return true;
-                // 2) YouTube 直播徽章：含 DVR（duration 為有限且持續成長）的直播也能被抓到
-                if (typeof document !== "undefined" && document.querySelector('.ytp-live-badge')) return true;
+                // 2) 大平台·快速路徑：含 DVR（duration 有限且持續成長）的直播，用 DOM/host 瞬間判定最準
+                if (typeof document !== "undefined") {
+                    const host = (typeof location !== "undefined" && location.hostname) || "";
+                    if (host === "live.bilibili.com" || host.endsWith(".live.bilibili.com")) return true; // B 站直播
+                    if (document.querySelector('.ytp-live-badge')) return true;                            // YouTube 直播徽章
+                }
+                // 3) 通用·啟發式（不需 per-site）：duration 隨真實時間持續成長 ⇒ 直播。
+                //    每 tick 取樣 (duration, 時間)，連續 2 次「以接近真實時間的速度成長」才判定，避免偶發抖動誤判 VOD。
+                if (videoDom && isFinite(videoDom.duration)) {
+                    const now = Date.now();
+                    const d = videoDom.duration;
+                    const s = this._liveProbe;
+                    if (!s) {
+                        this._liveProbe = { d, t: now };
+                    } else if (now - s.t > 500) {
+                        const grew = d - s.d;
+                        const elapsed = (now - s.t) / 1000;
+                        if (grew > 0.5 * elapsed && grew > 0.2) {
+                            this._liveGrowHits = (this._liveGrowHits || 0) + 1;
+                        } else if (grew < 0.05) {
+                            this._liveGrowHits = 0; // 沒成長 → 視為 VOD
+                        }
+                        this._liveProbe = { d, t: now };
+                        if (this._liveGrowHits >= 2) return true;
+                    }
+                }
             } catch (_) { }
             return false;
         }
@@ -5666,57 +5719,65 @@
 
             const waitForLoadding = room['waitForLoadding'];
             let paused = room['paused'];
-            if (waitForLoadding && !paused && !Var.isThisMemberLoading) {
-                paused = true;
-            }
             let isLoading = (Math.abs(this.memberLastSeek - videoDom.currentTime) < 0.01);
             this.memberLastSeek = -1;
-            // 直播只同步播放/暫停，不做時間 seek（直播 currentTime 原點跨裝置不一致，硬同步會來回震盪）。
+            // 直播：觀眾完全不被房主控制——不 seek、不同步播放/暫停、不同步倍速，各自看自己的直播邊緣
+            //（直播 currentTime 原點跨裝置不一致，硬同步會來回震盪；且房主卡頓不該拖累觀眾）。
+            // 仍會跟著房主「換台(URL)」，那段在外層 Member tick 處理、不受這裡影響。一般影片走原本同步。
             let isLive = this.IsLiveStream(videoDom);
-            if (paused == false) {
-                videoDom.videoTogetherPaused = false;
-                if (!isLive && Math.abs(videoDom.currentTime - this.CalculateRealCurrent(room)) > 1) {
-                    videoDom.currentTime = this.CalculateRealCurrent(room);
-                }
-                // play fail will return so here is safe
+            this.SetLiveContext(isLive);
+            if (isLive) {
+                videoDom.videoTogetherPaused = false; // 直播不由 VT 控制播放
                 this.memberLastSeek = videoDom.currentTime;
             } else {
-                videoDom.videoTogetherPaused = true;
-                if (!isLive && Math.abs(videoDom.currentTime - room["currentTime"]) > 0.1) {
-                    videoDom.currentTime = room["currentTime"];
+                if (waitForLoadding && !paused && !Var.isThisMemberLoading) {
+                    paused = true;
                 }
-            }
-            if (videoDom.paused != paused) {
-                if (paused) {
-                    console.info("pause");
-                    videoDom.pause();
+                if (paused == false) {
+                    videoDom.videoTogetherPaused = false;
+                    if (Math.abs(videoDom.currentTime - this.CalculateRealCurrent(room)) > 1) {
+                        videoDom.currentTime = this.CalculateRealCurrent(room);
+                    }
+                    // play fail will return so here is safe
+                    this.memberLastSeek = videoDom.currentTime;
                 } else {
-                    try {
-                        console.info("play");
-                        {
-                            // check if the video is ready
-                            if (window.location.hostname.endsWith('aliyundrive.com')) {
-                                if (videoDom.readyState == 0) {
-                                    throw new Error("Need to play manually");
-                                }
-                            }
-                        }
-                        await videoDom.play();
-                        if (videoDom.paused) {
-                            throw new Error("Need to play manually");
-                        }
-                    } catch (e) {
-                        throw new Error("Need to play manually");
+                    videoDom.videoTogetherPaused = true;
+                    if (Math.abs(videoDom.currentTime - room["currentTime"]) > 0.1) {
+                        videoDom.currentTime = room["currentTime"];
                     }
                 }
-            }
-            if (videoDom.playbackRate != room["playbackRate"]) {
-                try {
-                    videoDom.playbackRate = parseFloat(room["playbackRate"]);
-                } catch (e) { }
-            }
-            if (isNaN(videoDom.duration)) {
-                throw new Error("Need to play manually");
+                if (videoDom.paused != paused) {
+                    if (paused) {
+                        console.info("pause");
+                        videoDom.pause();
+                    } else {
+                        try {
+                            console.info("play");
+                            {
+                                // check if the video is ready
+                                if (window.location.hostname.endsWith('aliyundrive.com')) {
+                                    if (videoDom.readyState == 0) {
+                                        throw new Error("Need to play manually");
+                                    }
+                                }
+                            }
+                            await videoDom.play();
+                            if (videoDom.paused) {
+                                throw new Error("Need to play manually");
+                            }
+                        } catch (e) {
+                            throw new Error("Need to play manually");
+                        }
+                    }
+                }
+                if (videoDom.playbackRate != room["playbackRate"]) {
+                    try {
+                        videoDom.playbackRate = parseFloat(room["playbackRate"]);
+                    } catch (e) { }
+                }
+                if (isNaN(videoDom.duration)) {
+                    throw new Error("Need to play manually");
+                }
             }
             sendMessageToTop(MessageType.UpdateStatusText, { text: "Video synced", color: "green" });
 
