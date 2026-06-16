@@ -67,7 +67,7 @@ python script\build_extension.py disable_network
 - 我们把它 `clone` 到 `source/setting`，是为了「**设置页 + 扩展**」一起改、互相联动，开发更方便。
 - 它是**嵌套的独立 git**：要改设置页本身，进 `source/setting`、在**它自己的仓库**里 commit / push（不是主仓库；主仓库已 `.gitignore` 掉它）。
 - 编译时脚本会顺便把它构建出来（如 `source/setting/v3.buildme.html` → 设置页产物）。
-- 📄 设置页与前端**怎么连动、怎么新增一个设置开关**：见 [SETTINGS-LINKAGE.md](../SETTINGS-LINKAGE.md)。
+- 📄 设置页与前端**怎么联动、怎么新增一个设置开关**：见 [settings-linkage.md](settings-linkage.md)。
 
 > `source/local` 是「一起看本地视频文件」的播放页（用 StreamSaver / hls.js）；`source/website` 是官网内嵌版。**做扩展面板 / 同步开发都用不到这两个**，编译时加 `disable_network` 跳过即可（见下）。
 
