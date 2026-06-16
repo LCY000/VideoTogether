@@ -165,3 +165,21 @@ RecoveryState() 判斷是否在房間（TabStorage 優先，其次 URL / session
 - **務實零閃**：只保證消除「展→收」；跨網域首訪/還原可能有一次「收→展」，已與使用者確認可接受。
 - **淘汰每網域記憶**：不在房間時不記住手動收/展，換取行為一致與 bug 根除；如日後需要，可再加同分頁 sessionStorage 暫存，不影響本架構。
 - **相容性**：殘留的舊 `VideoTogetherMinimizedHere` 不再被讀取，可忽略；不需遷移。
+
+## 8. 審查發現與定案（2026-06-17，opus + codex 雙審）
+
+兩份獨立審查確認：this 綁定、同步時序（RecoveryState 先於 firstSync）、SaveIsMinimized 無 re-entrancy/null、exitRoom 寫後刪、carried 型別、autoCollapse 雙跑皆正確；主目標「每次載入都閃」已根除。opus 判 SHIP、codex 判 FIX-FIRST，差異集中在以下**先天取捨**。
+
+**殘留的「展→收」一次性邊界（兩個觸發點，同一根因）**
+
+根因：`Init()` 用同步鏡像做樂觀判斷，權威值（真 `MinimiseDefault` / TabStorage 房間）要等非同步 firstSync。當鏡像=OFF（樂觀展開）但真相是「該收合」時，會有**單次**展→收：
+1. **剛把設定關→開的那一次載入**：鏡像仍是舊的「0」。下次同步後即修正；首裝無鏡像時為收合（安全）。
+2. **設定關 ＋ 在 TabStorage 房間裡收起過 ＋ 跨網域換頁**：Init 從鏡像=OFF 先展開，firstSync 由 TabStorage carried=1 收回。
+
+**為何不採 codex 建議的「sync 前一律先收合」**：那會把**設定關、不在房間**的常見情況變成**每次載入都「收→展」**閃一下，等於把常見情境弄回有閃爍——以罕見邊界換常見回歸，不划算。此為先天取捨：Init 必須猜，猜展開→罕見展→收；猜收合→常見收→展。本實作選擇「常見情況零閃、僅罕見邊界殘留單次展→收」。
+
+**對使用者實際設定（預設收合＝ON）零影響**：設定 ON 時 Init 一律先收合，永不先展開 → 任何情況都不會出現展→收（在房間且 carried=展開時為可接受的收→展）。上述兩個邊界僅影響「設定關（預設展開）」的使用者。
+
+**定案：SHIP**（不改邏輯，記錄為已知單次邊界）。若日後要「保證永不展→收」，唯一完整解是「面板與圖示先藏、firstSync 後才現身」（hidden-gate），代價是設定關時面板現身略慢——此為 brainstorming 階段已被選擇放棄的方案。
+
+**次要（不阻擋）**：`disableDefaultSize`（`vt.js` 約 1845/1855）改寫 firstSync 後已無讀取，為 dead write；移除安全但會牽動 33 個建置產物重建，列為可選清理。
