@@ -521,8 +521,20 @@
     }
 
     let wrapper = document.createElement("div");
-    wrapper.innerHTML = `{{{ {"user": "./html/loading.html", "order":1} }}}`;
     (document.body || document.documentElement).appendChild(wrapper);
+    // 開機 splash「loading ...」改為「延遲顯示」：載入夠快（vt.js 已建立 #VideoTogetherWrapper）就完全不注入，
+    // 避免每次載入都閃一下載入框；只有載入真的慢（>800ms，多為 userscript 從 CDN 抓 vt.js）才顯示載入指示器。
+    // vt.js 啟動後既有的 remove() 仍會把它收掉。子框(iframe)維持原本立即注入、行為不變。
+    function injectVtLoading() {
+        wrapper.innerHTML = `{{{ {"user": "./html/loading.html", "order":1} }}}`;
+    }
+    if (window.self === window.top) {
+        setTimeout(() => {
+            try { if (!document.querySelector("#VideoTogetherWrapper")) injectVtLoading(); } catch (e) { }
+        }, 800);
+    } else {
+        injectVtLoading();
+    }
     let script = document.createElement('script');
     script.type = 'text/javascript';
 
