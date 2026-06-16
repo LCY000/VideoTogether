@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781616401
+// @version      1781617209
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -3990,7 +3990,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781616401';
+            this.version = '1781617209';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -4737,6 +4737,8 @@
                         if (this.role === this.RoleEnum.Null) break; // 已退出房間，忽略飛行中 tick 殘留的同步狀態
                         if (this.waitForLoadding) {
                             this.UpdateStatusText("メンバーの読み込み中...", "red");
+                        } else if (this._ctxIsLive) {
+                            _this.UpdateStatusText("接続済み", "green"); // 直播：只報「已連線」，不謊稱播放同步
                         } else {
                             _this.UpdateStatusText("動画の同期完了", "green");
                         }
@@ -5812,7 +5814,9 @@
                     throw new Error("手動で再生してください");
                 }
             }
-            sendMessageToTop(MessageType.UpdateStatusText, { text: "動画の同期完了", color: "green" });
+            sendMessageToTop(MessageType.UpdateStatusText, isLive
+                ? { text: "接続済み", color: "green" }   // 直播：只報「已連線」，不謊稱播放同步
+                : { text: "動画の同期完了", color: "green" });
 
             setTimeout(() => {
                 try {

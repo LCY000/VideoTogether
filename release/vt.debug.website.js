@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781616401
+// @version      1781617209
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -3990,7 +3990,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781616401';
+            this.version = '1781617209';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -4737,6 +4737,8 @@
                         if (this.role === this.RoleEnum.Null) break; // 已退出房間，忽略飛行中 tick 殘留的同步狀態
                         if (this.waitForLoadding) {
                             this.UpdateStatusText("等待成员加载视频", "red");
+                        } else if (this._ctxIsLive) {
+                            _this.UpdateStatusText("已连线", "green"); // 直播：只報「已連線」，不謊稱播放同步
                         } else {
                             _this.UpdateStatusText("视频同步成功", "green");
                         }
@@ -5812,7 +5814,9 @@
                     throw new Error("请手动点击播放");
                 }
             }
-            sendMessageToTop(MessageType.UpdateStatusText, { text: "视频同步成功", color: "green" });
+            sendMessageToTop(MessageType.UpdateStatusText, isLive
+                ? { text: "已连线", color: "green" }   // 直播：只報「已連線」，不謊稱播放同步
+                : { text: "视频同步成功", color: "green" });
 
             setTimeout(() => {
                 try {

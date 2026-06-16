@@ -22,6 +22,7 @@
     "host_role_live": "ホスト · ライブ（各自再生）",
     "member_role_live": "視聴者 · ライブ（各自再生）",
     "live_independent_hint": "ライブを検出 — 各自で再生します",
+    "live_connected": "接続済み",
     "no_video_in_this_page": "同期できる動画が見つかりません",
     "sync_success": "動画の同期完了",
     "timeout": "タイムアウト",

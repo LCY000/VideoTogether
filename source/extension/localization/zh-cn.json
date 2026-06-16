@@ -22,6 +22,7 @@
     "host_role_live": "房主 · 直播各自控制",
     "member_role_live": "观众 · 直播各自控制",
     "live_independent_hint": "检测到直播，改为各自控制",
+    "live_connected": "已连线",
     "no_video_in_this_page": "尚未检测到可同步的视频",
     "sync_success": "视频同步成功",
     "timeout": "超时",

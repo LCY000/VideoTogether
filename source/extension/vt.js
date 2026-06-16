@@ -2893,6 +2893,8 @@
                         if (this.role === this.RoleEnum.Null) break; // 已退出房間，忽略飛行中 tick 殘留的同步狀態
                         if (this.waitForLoadding) {
                             this.UpdateStatusText("{$wait_for_memeber_loadding$}", "red");
+                        } else if (this._ctxIsLive) {
+                            _this.UpdateStatusText("{$live_connected$}", "green"); // 直播：只報「已連線」，不謊稱播放同步
                         } else {
                             _this.UpdateStatusText("{$sync_success$}", "green");
                         }
@@ -3968,7 +3970,9 @@
                     throw new Error("{$need_to_play_manually$}");
                 }
             }
-            sendMessageToTop(MessageType.UpdateStatusText, { text: "{$sync_success$}", color: "green" });
+            sendMessageToTop(MessageType.UpdateStatusText, isLive
+                ? { text: "{$live_connected$}", color: "green" }   // 直播：只報「已連線」，不謊稱播放同步
+                : { text: "{$sync_success$}", color: "green" });
 
             setTimeout(() => {
                 try {
