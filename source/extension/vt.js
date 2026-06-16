@@ -1858,7 +1858,17 @@
         }
 
         SaveIsMinimized(minimized) {
-            localStorage.setItem("VideoTogetherMinimizedHere", minimized ? 1 : 0)
+            // 收/展只在「房間會話」中記憶（跟著房間跨頁繼承）；不在房間則不記憶（沒在房間 → 純看設定）。
+            // 立即寫入 TabStorage + sessionStorage，避免手動操作後馬上換頁、來不及被同步迴圈持久化。
+            // 註：this.minimized 已由 Minimize/Maximize 先行設定，GetRoomState 讀的就是它。
+            try {
+                let ext = window.videoTogetherExtension;
+                if (ext && ext.role != ext.RoleEnum.Null) {
+                    let state = ext.GetRoomState("");
+                    sendMessageToTop(MessageType.SetTabStorage, state);
+                    ext.SaveStateToSessionStorageWhenSameOrigin("");
+                }
+            } catch (e) { }
         }
 
         InitTheme() {
@@ -3013,14 +3023,16 @@
                         }
                     } catch { };
                     if (firstSync) {
-                        // 全域「預設最小化」(MinimiseDefault) 優先：開啟時每次載入都先收成右下角小圖示，
-                        // 即使本站之前手動展開/收合過也一樣（Init() 讀 VideoTogetherMinimizedHere 會把 disableDefaultSize 設成 true，
-                        // 舊版寫法會因此整段被跳過，導致此開關「看起來完全沒作用」）。
-                        // 關閉時才尊重本站記憶：已有 disableDefaultSize（Init 已套本站狀態）就不動，否則預設展開。
-                        if (data.MinimiseDefault) {
-                            window.videoTogetherFlyPannel.Minimize(true);
-                        } else if (!window.videoTogetherFlyPannel.disableDefaultSize) {
-                            window.videoTogetherFlyPannel.Maximize(true);
+                        // 把 MinimiseDefault 鏡像進 localStorage，供下次載入 Init() 同步讀取（消除「展→收」閃爍的關鍵）。
+                        try { localStorage.setItem("VideoTogetherMinimiseDefault", data.MinimiseDefault ? 1 : 0); } catch (e) { }
+                        // 權威決策：不在房間 → 純看設定；在房間 → 已由上方 RecoveryState 依 carried 套好，這裡不覆寫。
+                        // （this.role 在 RecoveryState 後即反映是否在房間。）
+                        if (this.role == this.RoleEnum.Null) {
+                            if (data.MinimiseDefault) {
+                                window.videoTogetherFlyPannel.Minimize(true);
+                            } else {
+                                window.videoTogetherFlyPannel.Maximize(true);
+                            }
                         }
                     }
                     if (typeof (data.PublicUserId) != 'string' || data.PublicUserId.length < 5) {
@@ -3405,6 +3417,9 @@
             let state = this.GetRoomState("");
             sendMessageToTop(MessageType.SetTabStorage, state);
             this.SaveStateToSessionStorageWhenSameOrigin("");
+            // 退房清掉房間會話的收/展記憶；之後回到「不在房間 → 純看設定」。
+            // TabStorage 因 role=Null 時 GetRoomState 回傳 {} 已被清空。
+            try { window.sessionStorage.removeItem("VideoTogetherMinimized"); } catch (e) { }
         }
 
         getVoiceVolume() {
@@ -3810,7 +3825,9 @@
                 VideoTogetherTimestamp: Date.now() / 1000,
                 VideoTogetherVoice: voice,
                 VideoVolume: this.getVideoVolume(),
-                VoiceVolume: this.getVoiceVolume()
+                VoiceVolume: this.getVoiceVolume(),
+                // 收/展跟著房間會話跨頁繼承（每個用戶端各自的；刻意不放 URL，避免傳染給觀眾）
+                VideoTogetherMinimized: (window.videoTogetherFlyPannel && window.videoTogetherFlyPannel.minimized) ? 1 : 0
             }
         }
 
@@ -3832,6 +3849,8 @@
                     window.sessionStorage.setItem("VideoTogetherPassword", this.password);
                     window.sessionStorage.setItem("VideoTogetherRole", this.role);
                     window.sessionStorage.setItem("VideoTogetherTimestamp", Date.now() / 1000);
+                    window.sessionStorage.setItem("VideoTogetherMinimized",
+                        (window.videoTogetherFlyPannel && window.videoTogetherFlyPannel.minimized) ? 1 : 0);
                     return sameOrigin;
                 } else {
                     return false;

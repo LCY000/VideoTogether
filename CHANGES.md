@@ -60,6 +60,7 @@
 - **修 Bug：退出房間後仍顯示「同步成功」**——`exitRoom()` 補上清除狀態文字 `UpdateStatusText("", "")`。
 - **錯誤訊息在地化**：上游公用伺服器沒有 zh-tw、會回英文錯誤（Wrong Password / Room Not Exists / Other Host Is Syncing…）→ 在 `UpdateStatusText` 客戶端對照翻成繁中。
 - **錯誤時不顯示「正在連線文字聊天伺服器…」**：收到 error 時呼叫 `setTxtMsgInterface(0)` 收起聊天介面。
+- **修「浮動面板載入時先展開再收合」的閃爍**：舊機制把收/展決策分散在 HTML 預設、`Init()`（讀每網域 `VideoTogetherMinimizedHere`）、`InRoom()` 強制 `Maximize()`、與**非同步**的 `SyncStorageValue` 之間，導致同步路徑先展開、非同步才收合而閃爍。重構為：①「`MinimiseDefault` 預設收合」只在**不在房間**時生效，並把設定鏡像進 `localStorage` 供 `Init()` **同步**讀取（核心：確定該展開前絕不先展開）；②**在房間**則繼承自己上一頁的收/展（新增 `VideoTogetherMinimized` 跟著房間會話走 TabStorage/sessionStorage，**刻意不放 URL**，避免房主狀態傳染觀眾），無記憶時（如觀眾首次點連結進房）預設展開；③`InRoom()` 不再強制展開；④退房清除該記憶、回到「純看設定」。決策邏輯抽成純函式 `VideoTogetherResolveMinimized` 並加單元測試（`test/extension/collapse-state.test.js`）。
 
 ## 6. 全螢幕迷你介面（`fullscreen.html`）
 
