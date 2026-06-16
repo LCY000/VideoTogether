@@ -117,27 +117,30 @@
         }
     }
 
-    let languages = ['en-us', 'zh-cn', 'zh-tw', 'ja-jp'];
+    const languages = ['en-us', 'zh-cn', 'zh-tw', 'ja-jp'];
     let language = 'en-us';
-    let prefixLen = 0;
     let settingLanguage = undefined;
     try {
         settingLanguage = await getGM().getValue("DisplayLanguage");
     } catch (e) { };
 
-    if (typeof settingLanguage != 'string') {
-        settingLanguage = navigator.language;
+    if (typeof settingLanguage != 'string' || settingLanguage.trim() === '' || settingLanguage.toLowerCase() === 'auto') {
+        settingLanguage = navigator.language; // 空值／auto＝自動偵測瀏覽器語言（與 extension.js 一致；修正 popup 在 auto/空值時固定變英文）
     }
     if (typeof settingLanguage == 'string') {
         settingLanguage = settingLanguage.toLowerCase();
-        for (let i = 0; i < languages.length; i++) {
-            for (let j = 0; j < languages[i].length && j < settingLanguage.length; j++) {
-                if (languages[i][j] != settingLanguage[j]) {
-                    break;
-                }
-                if (j > prefixLen) {
-                    prefixLen = j;
+        if (languages.includes(settingLanguage)) {
+            language = settingLanguage;
+        } else if (settingLanguage.split('-')[0] === 'zh') {
+            // 中文再細分:繁體（tw/hk/mo/hant）對到 zh-tw,其餘（cn/sg/hans…）對到 zh-cn
+            language = /(^|-)(tw|hk|mo|hant)(-|$)/.test(settingLanguage) ? 'zh-tw' : 'zh-cn';
+        } else {
+            const settingLanguagePrefix = settingLanguage.split('-')[0];
+            for (let i = 0; i < languages.length; i++) {
+                const languagePrefix = languages[i].split('-')[0];
+                if (settingLanguagePrefix === languagePrefix) {
                     language = languages[i];
+                    break;
                 }
             }
         }
