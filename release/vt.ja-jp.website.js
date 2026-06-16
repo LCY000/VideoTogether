@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781617209
+// @version      1781619099
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1832,6 +1832,37 @@
         background: rgba(224, 105, 122, 0.32);
         color: #fff;
     }
+
+    /* 送出改低調紙飛機 icon（與 < / ✕ 同調，不再用藍漸層+光暈搶眼）；置中、含 disabled 態 */
+    .container #send-button {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.10);
+        color: #dfe7ff;
+    }
+
+    .container #send-button:hover {
+        background: rgba(91, 141, 239, 0.30);
+        color: #fff;
+        filter: none;
+    }
+
+    .container #send-button:disabled,
+    .container #send-button:disabled:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #82828c;
+        cursor: default;
+    }
+
+    .container #send-button svg {
+        display: block;
+        /* 紙飛機 glyph 視覺重心偏右上（尖端指向右上角），往左下微調 1px 看起來才置中 */
+        transform: translate(-1px, 1px);
+    }
 </style>
 <div class="container" id="container">
     <div class="drag-handle" id="drag-handle" title="拖動">
@@ -1846,7 +1877,7 @@
     </div>
     <button id="expand-button">&lt;</button>
     <input type="text" placeholder="テキストメッセージ" id="text-input" class="expand" />
-    <button id="send-button">送信</button>
+    <button id="send-button" aria-label="送信" title="送信"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"></path><path d="M22 2 15 22 11 13 2 9 22 2z"></path></svg></button>
     <button id="close-btn">✕</button>
 </div>
 `);
@@ -3990,7 +4021,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781617209';
+            this.version = '1781619099';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
