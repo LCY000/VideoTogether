@@ -19,8 +19,9 @@
 
 ### 1b. 其他 lcy000 / fork 專屬引用（原本漏列，這次補上）
 - [ ] **信任網域**：`source/extension/extension.js:285` 的 `'lcy000.github.io'`（以及 `:348` 的 `endsWith("lcy000.github.io")`）——這是我們 fork 設定頁的網域，推回時移除。
-- [ ] **build 腳本**：`script/build_extension.py`（約 175–177 行）會 `git clone` **`LCY000/VideoTogether-setting`** 到 `source/setting`——推回時改成 clone **上游的設定 repo**。
-- [ ] **開發文件**：`docs/en/development.md`、`docs/zh-cn/development.md` 內提到 `LCY000/VideoTogether-setting`、`lcy000.github.io`、`source/setting` 的安排——推回時改成上游設定 repo，或拿掉 fork 專屬描述（或整份排除，見第 5 節）。
+- [ ] **build 腳本**：`script/build_extension.py`（約 175–177 行）會 `git clone` **`LCY000/VideoTogether-setting`** 到 `source/setting`——推回時改成 clone 上游 **`VideoTogether/VideoTogether-setting`**。
+- [ ] **開發文件**：`docs/en/development.md`、`docs/zh-cn/development.md` 內提到 `LCY000/VideoTogether-setting`、`lcy000.github.io`——只要把這些 **fork 專屬網址**改成上游（`VideoTogether/VideoTogether-setting`）即可。
+      > `source/setting` 這個「把設定頁 clone 進來一起開發」的**安排本身是通用做法，不用排除或修正**，文件照常保留即可。
 
 ### 1c. 伺服器位址（已是上游，免改）
 - [x] **API／更新伺服器 `source/extension/config/release_host`** = `https://vt.panghair.com:5000/`
@@ -28,8 +29,7 @@
       > 註：`vt.js` 的 `@namespace` / `@icon` 用 `2gether.video`，那是上游官方品牌網域（非伺服器、也非 fork 專屬）；實際 API/WS 連的是上面的 `release_host`。
 
 ### 1d. 設定頁本身的改動要 PR 到上游設定 repo
-- [ ] 我們對設定頁的改動（繁中 zh-tw、版面重做、ⓘ 就地展開說明、新開關…）要以 PR 形式提到**上游的設定 repo**，而不是只留在我們 fork 的設定 repo（`LCY000/VideoTogether-setting`）。
-      > 上游設定 repo 的確切名稱以實際為準（本檔舊版寫 `VideoTogether/setting`，未必正確，推回前再確認）。
+- [ ] 我們對設定頁的改動（繁中 zh-tw、版面重做、ⓘ 就地展開說明、新開關…）要以 PR 形式提到上游的設定 repo **`VideoTogether/VideoTogether-setting`**，而不是只留在我們 fork 的 `LCY000/VideoTogether-setting`。
 
 ## 2. 預設值差異（決定要不要一起帶上游）
 
@@ -59,8 +59,8 @@
 
 - [ ] `handoff/`、`docs/superpowers/`、`docs/UPSTREAM-PORT-CHECKLIST.md`（本檔）、`docs/SETTINGS-LINKAGE.md`、
       `CHANGES.md`（fork 自己的變更紀錄）、memory 等，都是 fork 內部用，PR 前排除。
-- [ ] **`docs/en|zh-cn/development.md`**：通用開發說明本身可考慮貢獻，但內含 fork 專屬引用（`LCY000`、`source/setting` 安排），要嘛先 genericize、要嘛排除。
-- [ ] **`source/chrome/icon/vt.png`**：未被引用的圖（圖示母檔／與舊上游 `android-icon-192x192.png` 同檔）。別當成「在用的資產」帶進上游 PR；上游若要圓角圖示，提供 `icon-*` 與 `vt_64x64`/灰即可。
+- [ ] **`docs/en|zh-cn/development.md`** 是通用開發說明，**可以保留／一起貢獻**；只需把裡面的 fork 專屬網址（`LCY000`、`lcy000.github.io`）換成上游（見 1b）。`source/setting` 的開發安排本身是通用做法，不必拿掉。
+- [ ] **`assets/icons/`**：fork 的圖示存檔（母檔 `vt.png`、圓角圖、favicon 備份），非擴充執行所需。上游若要圓角圖示，提供 `source/chrome/icon/` 的 `icon-*` 與 `vt_64x64`/灰即可，這個存檔資料夾可不帶。
 
 ## 6. 提交與品牌
 

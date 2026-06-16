@@ -52,20 +52,23 @@ python script\build_extension.py disable_network
 
 然后输出到 `release/`，再把各浏览器需要的产物复制进 `source/chrome`、`source/firefox`、`source/safari`。
 
-### 关于那三个「外部仓库」与 `source/setting`
+### `source/setting` 与编译时会拉取的其他仓库
 
-`source/local`、`source/website`、`source/setting` 这三个目录**不属于本仓库**——它们各自是独立的 Git 仓库，编译脚本会把它们 `clone` 进来。本仓库的 `.gitignore` 已经忽略这三个目录（不是 submodule，主仓库也**不跟踪它们的内容**）。这样安排是为了**能和扩展联动开发，又各自保留独立的 Git 历史**。
+`source/local`、`source/website`、`source/setting` 这三个目录**不属于本仓库**——它们各自是独立的 Git 仓库（**嵌套的 git checkout**，各有自己的 `.git`），编译脚本会 `clone` 进来。本仓库的 `.gitignore` 已忽略这三个目录（**不是 submodule**，主仓库也不跟踪它们的内容），好处是**能和扩展联动开发，又各自保留独立的 Git 历史**。
 
-| 目录 | 来源仓库 | 内容 |
-| --- | --- | --- |
-| `source/local` | `VideoTogether/localvideo` | 本地视频播放页 |
-| `source/website` | `VideoTogether/website_next` | 官网内嵌版 |
-| `source/setting` | `LCY000/VideoTogether-setting`（本 fork 自建） | **设置页** |
+| 目录 | 来源仓库 | 内容 | 扩展开发会用到？ |
+| --- | --- | --- | --- |
+| `source/setting` | `LCY000/VideoTogether-setting`（fork 自上游 `VideoTogether/VideoTogether-setting`） | **设置页** | 改设置页时会 |
+| `source/local` | `VideoTogether/localvideo` | 本地视频播放页（一起看本地文件） | 一般用不到 |
+| `source/website` | `VideoTogether/website_next` | 官网内嵌版 | 用不到 |
 
-> **重点说明 `source/setting`**：上游 VideoTogether 项目里**并没有 `source/setting` 这个目录**。设置页是我们这个 fork 单独维护的项目，放在另一个 Git 仓库 `LCY000/VideoTogether-setting`；我们把它 `clone` 到 `source/setting`，这样编译扩展时能顺便构建 / 预览设置页，也方便「设置页 + 扩展」一起改、互相联动，开发更方便。
->
-> - 要改**设置页本身**：进 `source/setting` 目录，在**它自己的仓库**里 commit / push（不是主仓库；主仓库已 `.gitignore` 掉它）。
-> - 编译时脚本会把它构建出来（如 `source/setting/v3.buildme.html` → 设置页产物）。
+**`source/setting`（开发时最常碰到的外部仓库）**
+- 上游 VideoTogether **主仓库里并没有 `source/setting`**。设置页是独立项目：上游在 `VideoTogether/VideoTogether-setting`，我们的 fork 在 `LCY000/VideoTogether-setting`。
+- 我们把它 `clone` 到 `source/setting`，是为了「**设置页 + 扩展**」一起改、互相联动，开发更方便。
+- 它是**嵌套的独立 git**：要改设置页本身，进 `source/setting`、在**它自己的仓库**里 commit / push（不是主仓库；主仓库已 `.gitignore` 掉它）。
+- 编译时脚本会顺便把它构建出来（如 `source/setting/v3.buildme.html` → 设置页产物）。
+
+> `source/local` 是「一起看本地视频文件」的播放页（用 StreamSaver / hls.js）；`source/website` 是官网内嵌版。**做扩展面板 / 同步开发都用不到这两个**，编译时加 `disable_network` 跳过即可（见下）。
 
 ### `disable_network` 是什么
 

@@ -52,20 +52,23 @@ python script\build_extension.py disable_network
 
 then writes the results to `release/` and copies each browser's bundle into `source/chrome`, `source/firefox`, and `source/safari`.
 
-### The three "external repos" and `source/setting`
+### `source/setting` and the other repos the build pulls
 
-`source/local`, `source/website`, and `source/setting` are **not part of this repo**. Each is its own independent Git repository that the build script `clone`s in. This repo's `.gitignore` excludes all three (they're **not** submodules, and the main repo does **not** track their contents). The point of this layout is to **develop those pieces alongside the extension while keeping each one's Git history separate**.
+`source/local`, `source/website`, and `source/setting` are **not part of this repo** — each is its own independent Git repository (a **nested git checkout** with its own `.git`) that the build script `clone`s in. This repo's `.gitignore` excludes all three (they're **not** submodules, and the main repo doesn't track their contents). This lets you develop those pieces alongside the extension while keeping each one's Git history separate.
 
-| Directory | Source repo | Contents |
-| --- | --- | --- |
-| `source/local` | `VideoTogether/localvideo` | Local video player page |
-| `source/website` | `VideoTogether/website_next` | Website-embed build |
-| `source/setting` | `LCY000/VideoTogether-setting` (this fork's own) | **Settings page** |
+| Directory | Source repo | Contents | Needed for extension dev? |
+| --- | --- | --- | --- |
+| `source/setting` | `LCY000/VideoTogether-setting` (forked from upstream `VideoTogether/VideoTogether-setting`) | **Settings page** | Only when editing the settings page |
+| `source/local` | `VideoTogether/localvideo` | Local video player ("watch local files together") | Usually not |
+| `source/website` | `VideoTogether/website_next` | Website-embed build | No |
 
-> **About `source/setting` specifically**: the upstream VideoTogether project has **no `source/setting` directory**. The settings page is a separate project this fork maintains in its own repo, `LCY000/VideoTogether-setting`. We `clone` it into `source/setting` so that building the extension can also build / preview the settings page, and so you can edit the settings page and the extension together — it makes development more convenient.
->
-> - To change the **settings page itself**: go into `source/setting` and commit / push in **its own repo** (not the main repo, which `.gitignore`s it).
-> - The build compiles it too (e.g. `source/setting/v3.buildme.html` → the settings-page output).
+**`source/setting`** (the external repo you'll actually touch)
+- Upstream VideoTogether's **main repo has no `source/setting`**. The settings page is a separate project: upstream is `VideoTogether/VideoTogether-setting`, and our fork is `LCY000/VideoTogether-setting`.
+- We `clone` it into `source/setting` so you can edit the **settings page and the extension together** — more convenient.
+- It's a nested independent git checkout: to change the settings page itself, commit / push inside `source/setting` (its **own** repo), not the main repo.
+- The build compiles it too (e.g. `source/setting/v3.buildme.html` → the settings-page output).
+
+> `source/local` is the "watch local video files together" player (StreamSaver / hls.js); `source/website` is the website-embed build. **Neither is needed for extension / panel / sync work** — just pass `disable_network` to skip them (see below).
 
 ### What `disable_network` does
 
