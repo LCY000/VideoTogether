@@ -2,6 +2,8 @@
 
 > 目標：把這個 fork 的改動，乾淨地貢獻回原作者的 VideoTogether 專案。
 > 本檔列出所有「fork 專屬、推回上游前要先處理」的項目，避免遺漏。
+>
+> **勾選約定**：`[x]` = 目前已是上游的值／已確認乾淨，推回時**不用改**；`[ ]` = fork 專屬或待辦，推回前要處理。
 
 整個專案分兩個 git：**前端**（userscript／擴充，repo 根目錄）和**設定頁**（`source/setting/`，內嵌的獨立 repo）。兩邊都要檢查。
 
@@ -9,16 +11,25 @@
 
 ## 1. 連結與部署位置（最重要）
 
-- [ ] **設定頁網址 `VT_SETTING_PAGE_URL`**（`source/extension/vt.js` 最上方一行）
-      推回上游時應**指回上游的設定頁**（上游的 GitHub Pages），我們自己部署的設定頁只當次選／備援。
-      改完記得 `python3 script/build_extension.py` 重建。
-- [ ] **面板齒輪 `href`**（`source/extension/html/pannel.html` 的 `#videoTogetherSetting`）
-      同上，與 `VT_SETTING_PAGE_URL` 保持一致。
-- [ ] **API／更新伺服器 `source/extension/config/release_host`**
-      目前已是上游的 `https://vt.panghair.com:5000/`，通常不用改；若我們曾改成自架，要還原。
-- [ ] **設定頁本身**：上游有自己的設定 repo（`VideoTogether/setting`）。我們對設定頁的改動
-      （繁中 zh-tw、版面重做、ⓘ 就地展開說明、新開關…）要以 PR 形式提到**上游的設定 repo**，
-      而不是只留在我們 fork 的設定 repo。
+### 1a. 設定頁網址（目前指向我們 fork 的 lcy000，推回要還原成上游）
+- [ ] **`VT_SETTING_PAGE_URL`**（`source/extension/vt.js:21`）
+      目前 = `https://lcy000.github.io/VideoTogether-setting/v3.html` → 推回時改回**上游的設定頁**。改完 `python3 script/build_extension.py disable_network` 重建。
+- [ ] **面板齒輪 `href`**（`source/extension/html/pannel.html:48` 的 `#videoTogetherSetting`）
+      與 `VT_SETTING_PAGE_URL` 保持一致。
+
+### 1b. 其他 lcy000 / fork 專屬引用（原本漏列，這次補上）
+- [ ] **信任網域**：`source/extension/extension.js:285` 的 `'lcy000.github.io'`（以及 `:348` 的 `endsWith("lcy000.github.io")`）——這是我們 fork 設定頁的網域，推回時移除。
+- [ ] **build 腳本**：`script/build_extension.py`（約 175–177 行）會 `git clone` **`LCY000/VideoTogether-setting`** 到 `source/setting`——推回時改成 clone **上游的設定 repo**。
+- [ ] **開發文件**：`docs/en/development.md`、`docs/zh-cn/development.md` 內提到 `LCY000/VideoTogether-setting`、`lcy000.github.io`、`source/setting` 的安排——推回時改成上游設定 repo，或拿掉 fork 專屬描述（或整份排除，見第 5 節）。
+
+### 1c. 伺服器位址（已是上游，免改）
+- [x] **API／更新伺服器 `source/extension/config/release_host`** = `https://vt.panghair.com:5000/`
+      ——這就是上游 VideoTogether 的伺服器，已確認，推回**不用改**。（`debug_host` = `http://127.0.0.1:5001/` 也是上游慣用，免改。）
+      > 註：`vt.js` 的 `@namespace` / `@icon` 用 `2gether.video`，那是上游官方品牌網域（非伺服器、也非 fork 專屬）；實際 API/WS 連的是上面的 `release_host`。
+
+### 1d. 設定頁本身的改動要 PR 到上游設定 repo
+- [ ] 我們對設定頁的改動（繁中 zh-tw、版面重做、ⓘ 就地展開說明、新開關…）要以 PR 形式提到**上游的設定 repo**，而不是只留在我們 fork 的設定 repo（`LCY000/VideoTogether-setting`）。
+      > 上游設定 repo 的確切名稱以實際為準（本檔舊版寫 `VideoTogether/setting`，未必正確，推回前再確認）。
 
 ## 2. 預設值差異（決定要不要一起帶上游）
 
@@ -30,8 +41,7 @@
 ## 3. 在地化（i18n）
 
 - [ ] 我們在**設定頁**新增了 `zh-tw` 一整套（上游原本只有 zh-cn / en-us / ja-jp）。
-- [ ] 前端在地化新增的字串（`source/extension/localization/*.json`）：`host_handed_over`、`err_*` 等，
-      四語都要齊全才好被上游接受。
+- [ ] 前端在地化新增的字串（`source/extension/localization/*.json`）：`host_handed_over`、`err_*`、`viewers_loading_hint`、`host_role`/`memeber_role`、`host_role_live`/`member_role_live`、`live_independent_hint`、`live_connected` 等，四語都要齊全才好被上游接受。
 - [ ] 語言下拉新增「Auto（自動偵測）」選項與「空值＝自動偵測」的修正（`extension.js` + 設定頁 `getDisplayLanguage`）。
 
 ## 4. 功能性改動（這些是貢獻重點，PR 時講清楚）
@@ -39,18 +49,26 @@
 - [ ] 介面／體驗重做（深色玻璃主題、淺深切換、面板 flex 版面、全螢幕迷你介面…）。
 - [ ] Bug 修復：退出房間後殘留 UI、房主被接手時自動降為觀眾並跟隨新房主。
 - [ ] 「預設最小化」開關失效修復（`MinimiseDefault` 優先於本站記憶）。
+- [ ] **直播（live）觀眾各自控制**：`IsLiveStream()` 三層偵測（`duration === Infinity` ／ `live.bilibili.com` host ／ YouTube 可見 `.ytp-live-badge` ／ duration 成長啟發式）＋雙向遲滯（卡頓不閃動、誤判數秒自癒）；`SyncMemberVideo` 在直播時**不同步** seek／播放暫停／倍速，只保留「跟房主換台(URL)」。
+- [ ] **直播狀態 UI**：常駐角色列「房主／觀眾 · 直播各自控制」＋第一次偵測到直播的一次性 toast＋直播時活動列由「影片同步成功」改「已連線」。
+- [ ] **修一般 YouTube 影片被誤判卡在直播**（`!isFinite` 把 NaN 載入態當直播、隱藏的 `.ytp-live-badge`）。
+- [ ] **popup 視窗語言偵測**對齊 `extension.js`（auto／空值不再固定變英文）。
+- [ ] **工具列圖示圓角化**：`icon-16/32/48/128/192` 與執行時 `vt_64x64`/`vt_gray_64x64` 重切 24% 圓角；全螢幕聊天「送出」改低調紙飛機 icon。
 
 ## 5. 不要帶進上游 PR 的 fork 專屬檔案
 
 - [ ] `handoff/`、`docs/superpowers/`、`docs/UPSTREAM-PORT-CHECKLIST.md`（本檔）、`docs/SETTINGS-LINKAGE.md`、
       `CHANGES.md`（fork 自己的變更紀錄）、memory 等，都是 fork 內部用，PR 前排除。
+- [ ] **`docs/en|zh-cn/development.md`**：通用開發說明本身可考慮貢獻，但內含 fork 專屬引用（`LCY000`、`source/setting` 安排），要嘛先 genericize、要嘛排除。
+- [ ] **`source/chrome/icon/vt.png`**：未被引用的圖（圖示母檔／與舊上游 `android-icon-192x192.png` 同檔）。別當成「在用的資產」帶進上游 PR；上游若要圓角圖示，提供 `icon-*` 與 `vt_64x64`/灰即可。
 
 ## 6. 提交與品牌
 
 - [ ] commit 訊息：上游可能偏好英文／squash 成單一乾淨提交；繁中提交訊息酌情整理。
-- [ ] 全專案品牌一律 **VideoTogether**（不要出現 AniméSync 等 fork 暫用名）。
-- [ ] 授權：沿用上游 MIT，不另外宣告。
+- [x] 全專案品牌一律 **VideoTogether**——已確認 `source/` 內**無 AniméSync 等 fork 暫用名殘留**（只剩本檔提到該名作說明）。
+- [x] 授權：沿用上游 MIT，不另外宣告（無需改動）。
 
 ---
 
-> 小抄：要重新指向設定頁，只改 `vt.js` 的 `VT_SETTING_PAGE_URL` 與 `pannel.html` 的齒輪 `href` 兩處，重建即可。
+> 小抄：要把設定頁／品牌指回上游，主要改這幾處再重建即可——
+> `vt.js` 的 `VT_SETTING_PAGE_URL`、`pannel.html` 的齒輪 `href`、`extension.js` 的 `lcy000.github.io` 信任網域、`build_extension.py` 的設定 repo clone URL，以及兩份 `development.md` 內的 LCY000 引用。
