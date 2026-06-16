@@ -334,6 +334,24 @@
         if (e) e.style.display = null;
     }
 
+    // === collapse-state:start — 純函式，單元測試見 test/extension/collapse-state.test.js ===
+    // 決定面板初始 minimized：
+    //   在房間   → 繼承 carried（1/"1"/true=收合、0/"0"/false=展開、缺失=展開）
+    //   不在房間 → 看 MinimiseDefault（true=收合、false=展開、未知=收合「安全，絕不先展開」）
+    function VideoTogetherResolveMinimized(state) {
+        if (state && state.inRoom) {
+            var c = state.carried;
+            if (c === 1 || c === "1" || c === true) return true;
+            if (c === 0 || c === "0" || c === false) return false;
+            return false; // 在房間、無記憶 → 展開
+        }
+        var d = state ? state.minimiseDefault : undefined;
+        if (d === true) return true;
+        if (d === false) return false;
+        return true; // 不在房間、設定未知 → 收合（安全，絕不先展開）
+    }
+    // === collapse-state:end ===
+
     function isVideoLoadded(video) {
         try {
             if (isNaN(video.readyState)) {
