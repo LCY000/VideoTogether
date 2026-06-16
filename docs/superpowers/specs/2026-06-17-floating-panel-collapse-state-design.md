@@ -183,3 +183,13 @@ RecoveryState() 判斷是否在房間（TabStorage 優先，其次 URL / session
 **定案：SHIP**（不改邏輯，記錄為已知單次邊界）。若日後要「保證永不展→收」，唯一完整解是「面板與圖示先藏、firstSync 後才現身」（hidden-gate），代價是設定關時面板現身略慢——此為 brainstorming 階段已被選擇放棄的方案。
 
 **次要（不阻擋）**：`disableDefaultSize`（`vt.js` 約 1845/1855）改寫 firstSync 後已無讀取，為 dead write；移除安全但會牽動 33 個建置產物重建，列為可選清理。
+
+## 9. 實機測試後的修正（2026-06-17，改採「收合優先 / 延後展開」）
+
+上節「SHIP、保留樂觀展開」在**實機**仍被使用者看到面板偶發「先展開再消失」。根因正是 §8 所述的樂觀展開競態（鏡像過時、或 sessionStorage 與 TabStorage 短暫不一致）在真實環境會發生，且使用者無法接受。**改變設計取捨**：
+
+- **`Init()` 不再做任何展開**：載入時一律 `Minimize(true)`（HTML 預設本即收合）。是否展開**完全交給權威的 firstSync / RecoveryState**。結構上消除「Init 先展開→非同步收回」，因此**永不出現展→收**；代價是「該展開」的情況（設定關、或在房間且上次展開）會有一次溫和的「收→展（小圖示→面板）」——這正是 brainstorming 階段使用者選擇「務實：只消除展→收、接受收→展」的方向。
+- **移除 `MinimiseDefault` 的 localStorage 鏡像**（Init 不再需要同步讀設定；§3.2 的鏡像概念與 §3.3 步驟 1 作廢）。`VideoTogetherResolveMinimized` 仍用於 `RecoveryStateFrom` 的在房間 carried 判斷，單元測試續存。
+- 與 codex 先前建議一致；當時為保護「設定關常見載入零閃」而未採，實機證據顯示該防護不值得（使用者用設定 ON，且展→收比收→展更刺眼）。
+
+**開機 splash**：`#videoTogetherLoading`（`extension.js` 注入）改為**擴充版完全不顯示**（vt.js 本機瞬間載入，splash 無意義）；僅 userscript/website（從 CDN 抓 vt.js）才顯示，且主頁框延遲 800ms、`#VideoTogetherWrapper` 已建立就不注入。

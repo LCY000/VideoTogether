@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781634814
+// @version      1781641958
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -3768,29 +3768,11 @@
         }
 
         Init() {
-            // 同步決定初始收/展，避免等非同步 sync 才收合造成「展→收」閃爍。
-            // 在房間（此時只能從 sessionStorage 同步得知；TabStorage 房間留待 firstSync 還原）→ 繼承 carried；
-            // 不在房間 → 看 MinimiseDefault 的 localStorage 鏡像（未知則收合，安全）。
-            let inRoom = false, carried = null;
-            try {
-                let ts = parseFloat(window.sessionStorage.getItem("VideoTogetherTimestamp"));
-                let rn = window.sessionStorage.getItem("VideoTogetherRoomName");
-                if (rn && !isNaN(ts) && ts + 60 >= Date.now() / 1000) {
-                    inRoom = true;
-                    carried = window.sessionStorage.getItem("VideoTogetherMinimized");
-                }
-            } catch (e) { }
-            let minimiseDefault = null;
-            try {
-                let m = window.localStorage.getItem("VideoTogetherMinimiseDefault");
-                if (m === "1") minimiseDefault = true;
-                else if (m === "0") minimiseDefault = false;
-            } catch (e) { }
-            if (VideoTogetherResolveMinimized({ inRoom: inRoom, carried: carried, minimiseDefault: minimiseDefault })) {
-                this.Minimize(true);
-            } else {
-                this.Maximize(true);
-            }
+            // 載入時一律先呈現「收合」（HTML 預設即收合）。是否展開完全交給「權威」的 firstSync / RecoveryState 決定，
+            // 不在這裡依（可能過時的）localStorage 鏡像或 sessionStorage 樂觀展開——那正是「Init 先展開 → 非同步又收回」
+            // 展→收閃爍的根因（剛切換設定那次鏡像會過時；在房間時 sessionStorage 與 TabStorage 可能短暫不一致）。
+            // 代價：本來該展開的情況（設定關、或在房間且上次展開）會有一次溫和的「收→展」，符合先前確認的取捨。
+            this.Minimize(true);
         }
 
         InRoom() {
@@ -4070,7 +4052,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781634814';
+            this.version = '1781641958';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -4898,10 +4880,9 @@
                         }
                     } catch { };
                     if (firstSync) {
-                        // 把 MinimiseDefault 鏡像進 localStorage，供下次載入 Init() 同步讀取（消除「展→收」閃爍的關鍵）。
-                        try { localStorage.setItem("VideoTogetherMinimiseDefault", data.MinimiseDefault ? 1 : 0); } catch (e) { }
-                        // 權威決策：不在房間 → 純看設定；在房間 → 已由上方 RecoveryState 依 carried 套好，這裡不覆寫。
-                        // （this.role 在 RecoveryState 後即反映是否在房間。）
+                        // 權威決策（載入後第一次、也是唯一一次依真正的 MinimiseDefault 決定收/展）：
+                        // 不在房間 → 純看設定；在房間 → 已由上方 RecoveryState 依 carried 套好，這裡不覆寫。
+                        // （this.role 在 RecoveryState 後即反映是否在房間。）Init 一律先收合，故這裡只會「維持收合」或「收→展」，不會「展→收」。
                         if (this.role == this.RoleEnum.Null) {
                             if (data.MinimiseDefault) {
                                 window.videoTogetherFlyPannel.Minimize(true);

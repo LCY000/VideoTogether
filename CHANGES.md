@@ -60,8 +60,8 @@
 - **修 Bug：退出房間後仍顯示「同步成功」**——`exitRoom()` 補上清除狀態文字 `UpdateStatusText("", "")`。
 - **錯誤訊息在地化**：上游公用伺服器沒有 zh-tw、會回英文錯誤（Wrong Password / Room Not Exists / Other Host Is Syncing…）→ 在 `UpdateStatusText` 客戶端對照翻成繁中。
 - **錯誤時不顯示「正在連線文字聊天伺服器…」**：收到 error 時呼叫 `setTxtMsgInterface(0)` 收起聊天介面。
-- **修「浮動面板載入時先展開再收合」的閃爍**：舊機制把收/展決策分散在 HTML 預設、`Init()`（讀每網域 `VideoTogetherMinimizedHere`）、`InRoom()` 強制 `Maximize()`、與**非同步**的 `SyncStorageValue` 之間，導致同步路徑先展開、非同步才收合而閃爍。重構為：①「`MinimiseDefault` 預設收合」只在**不在房間**時生效，並把設定鏡像進 `localStorage` 供 `Init()` **同步**讀取（核心：確定該展開前絕不先展開）；②**在房間**則繼承自己上一頁的收/展（新增 `VideoTogetherMinimized` 跟著房間會話走 TabStorage/sessionStorage，**刻意不放 URL**，避免房主狀態傳染觀眾），無記憶時（如觀眾首次點連結進房）預設展開；③`InRoom()` 不再強制展開；④退房清除該記憶、回到「純看設定」。決策邏輯抽成純函式 `VideoTogetherResolveMinimized` 並加單元測試（`test/extension/collapse-state.test.js`）。
-- **開機「loading ...」splash 改為延遲顯示**：上游在 `extension.js` 一載入就注入 `#videoTogetherLoading`（右下角 250×50 載入框），等 vt.js 啟動才移除。面板收合修好後，這個框消失只剩小圖示的過渡就裸露成閃爍。改為主頁框延遲 800ms 才注入、且 vt.js 已建立 `#VideoTogetherWrapper` 就不注入——擴充版（本機、瞬間載入）因此完全不再出現載入框；只有載入真的慢（userscript 版從 CDN 抓 vt.js）才顯示指示器。iframe 維持原本立即注入。
+- **修「浮動面板載入時閃爍」**：舊機制把收/展決策分散在 HTML 預設、`Init()`（讀每網域 `VideoTogetherMinimizedHere`）、`InRoom()` 強制 `Maximize()`、與**非同步**的 `SyncStorageValue` 之間，同步路徑先展開、非同步才收合而閃爍。重構：①收/展改以「是否在房間」決定——**不在房間**＝依設定開關（開=收合／關=展開）；**在房間**＝繼承自己上一頁（新增 `VideoTogetherMinimized` 跟著房間會話走 TabStorage/sessionStorage，**刻意不放 URL**，避免房主狀態傳染觀眾），無記憶時（如觀眾首次點連結進房）預設展開；②`InRoom()` 不再強制展開；③退房清除該記憶。**關鍵（消閃核心）：`Init()` 載入時一律先收合，「展開」只交給權威的首次 storage 同步 / 房間還原來做**——結構上不可能出現「先展開又收回」；該展開的情況頂多一次溫和的「收→展（小圖示→面板）」。決策邏輯抽成純函式 `VideoTogetherResolveMinimized` 並加單元測試（`test/extension/collapse-state.test.js`）。
+- **開機「loading ...」splash**：上游在 `extension.js` 一載入就注入 `#videoTogetherLoading`（右下角 250×50 載入框），等 vt.js 啟動才移除；面板收合後這個框消失只剩小圖示的過渡會裸露成閃爍。改為**擴充版完全不顯示**（vt.js 本機載入、瞬間，splash 無意義）；只有從 CDN 抓 vt.js 的 **userscript/website 版**才顯示，且主頁框延遲 800ms、vt.js 已建立 `#VideoTogetherWrapper` 就不注入。
 
 ## 6. 全螢幕迷你介面（`fullscreen.html`）
 

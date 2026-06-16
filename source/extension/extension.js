@@ -522,18 +522,21 @@
 
     let wrapper = document.createElement("div");
     (document.body || document.documentElement).appendChild(wrapper);
-    // 開機 splash「loading ...」改為「延遲顯示」：載入夠快（vt.js 已建立 #VideoTogetherWrapper）就完全不注入，
-    // 避免每次載入都閃一下載入框；只有載入真的慢（>800ms，多為 userscript 從 CDN 抓 vt.js）才顯示載入指示器。
-    // vt.js 啟動後既有的 remove() 仍會把它收掉。子框(iframe)維持原本立即注入、行為不變。
+    // 開機 splash「loading ...」的顯示策略：
+    //  ‑ 擴充版(isExtension)：vt.js 本機載入、幾乎瞬間，splash 沒意義 → 完全不顯示。
+    //  ‑ 網路版(userscript/website)：vt.js 從 CDN 抓、可能慢 → 主頁框延遲 800ms 才注入，且 vt.js 已建立
+    //    #VideoTogetherWrapper 就不注入（避免快速載入時閃一下）；子框維持立即。vt.js 啟動後既有 remove() 仍會收掉。
     function injectVtLoading() {
         wrapper.innerHTML = `{{{ {"user": "./html/loading.html", "order":1} }}}`;
     }
-    if (window.self === window.top) {
-        setTimeout(() => {
-            try { if (!document.querySelector("#VideoTogetherWrapper")) injectVtLoading(); } catch (e) { }
-        }, 800);
-    } else {
-        injectVtLoading();
+    if (!isExtension) {
+        if (window.self === window.top) {
+            setTimeout(() => {
+                try { if (!document.querySelector("#VideoTogetherWrapper")) injectVtLoading(); } catch (e) { }
+            }, 800);
+        } else {
+            injectVtLoading();
+        }
     }
     let script = document.createElement('script');
     script.type = 'text/javascript';
