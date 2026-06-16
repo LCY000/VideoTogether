@@ -3780,6 +3780,20 @@
             return data["currentTime"] + (this.getLocalTimestamp() - data["lastUpdateClientTime"]) * (isNaN(playbackRate) ? 1 : playbackRate);
         }
 
+        // 直播(live)偵測。直播沒有跨裝置一致的 currentTime 原點：每個瀏覽器各自錨定自己的
+        // DVR/直播時間軸，所以房主的 currentTime 與觀眾的 currentTime 對應的「同一直播時刻」是
+        // 不同數字。用絕對時間同步會讓觀眾每個 tick 都被 seek（一直往回跳到房主的數字，又被
+        // YouTube 推回直播邊緣，來回震盪）。偵測到直播時，改為只同步播放/暫停、不碰 currentTime。
+        IsLiveStream(videoDom) {
+            try {
+                // 1) 經典直播：duration 為無限大（多數 HLS/DASH 直播、YouTube 無 DVR 的純直播）
+                if (videoDom && !isFinite(videoDom.duration)) return true;
+                // 2) YouTube 直播徽章：含 DVR（duration 為有限且持續成長）的直播也能被抓到
+                if (typeof document !== "undefined" && document.querySelector('.ytp-live-badge')) return true;
+            } catch (_) { }
+            return false;
+        }
+
         GetDisplayTimeText() {
             let date = new Date();
             return date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
@@ -3813,16 +3827,18 @@
             }
             let isLoading = (Math.abs(this.memberLastSeek - videoDom.currentTime) < 0.01);
             this.memberLastSeek = -1;
+            // 直播只同步播放/暫停，不做時間 seek（直播 currentTime 原點跨裝置不一致，硬同步會來回震盪）。
+            let isLive = this.IsLiveStream(videoDom);
             if (paused == false) {
                 videoDom.videoTogetherPaused = false;
-                if (Math.abs(videoDom.currentTime - this.CalculateRealCurrent(room)) > 1) {
+                if (!isLive && Math.abs(videoDom.currentTime - this.CalculateRealCurrent(room)) > 1) {
                     videoDom.currentTime = this.CalculateRealCurrent(room);
                 }
                 // play fail will return so here is safe
                 this.memberLastSeek = videoDom.currentTime;
             } else {
                 videoDom.videoTogetherPaused = true;
-                if (Math.abs(videoDom.currentTime - room["currentTime"]) > 0.1) {
+                if (!isLive && Math.abs(videoDom.currentTime - room["currentTime"]) > 0.1) {
                     videoDom.currentTime = room["currentTime"];
                 }
             }
