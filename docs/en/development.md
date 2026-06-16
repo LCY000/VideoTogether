@@ -132,6 +132,21 @@ let isDevelopment = false;   // set to true
 
 ---
 
-## 6. Local backend debugging
+## 6. Version number (releasing / bumping)
+
+The version lives in the **three browser manifests** (maintained per platform); the userscript uses a build timestamp:
+
+| Location | Current | Notes |
+| --- | --- | --- |
+| `source/chrome/manifest.json` | `3.1.0` | Chrome / Edge (mv3) |
+| `source/safari/VideoTogether/Shared (Extension)/Resources/manifest.json` | `3.1.0` | Safari, same number as Chrome |
+| `source/firefox/manifest.json` | `1.4.0` | Firefox has its **own version track** (upstream AMO history, separate from Chrome's 3.x) |
+| userscript `@version` (`extension.js` header) | `{{timestamp}}` | auto-filled build timestamp, not semver — **no manual edit** |
+
+- **To bump**: just edit the manifest `version` field(s) above. Manifests are **static files, not processed by the build**, so **no rebuild needed**.
+- By convention **chrome / safari share one number**; **firefox keeps its own 1.x line** (don't force it to 3.x — that breaks its version continuity with the Firefox add-on store).
+- When porting upstream, whether/how to bump is left to upstream — see section 7 of [UPSTREAM-PORT-CHECKLIST.md](../UPSTREAM-PORT-CHECKLIST.md).
+
+## 7. Local backend debugging
 
 TODO. The client talks to the official server `https://2gether.video` by default (see `video_together_host` in `vt.js`); a local self-hosted backend workflow is not documented yet.

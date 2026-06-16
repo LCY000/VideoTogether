@@ -132,6 +132,21 @@ let isDevelopment = false;   // 改成 true
 
 ---
 
-## 6. 本地调试后端服务
+## 6. 版本号（发布 / bump 时）
+
+版本号分散在**三个浏览器 manifest**（各平台分开维护）；userscript 用 build 时间戳：
+
+| 位置 | 目前 | 说明 |
+| --- | --- | --- |
+| `source/chrome/manifest.json` | `3.1.0` | Chrome / Edge（mv3） |
+| `source/safari/VideoTogether/Shared (Extension)/Resources/manifest.json` | `3.1.0` | Safari，与 chrome 同号 |
+| `source/firefox/manifest.json` | `1.4.0` | Firefox **自成一条版本线**（沿用上游 AMO 历史，与 chrome 的 3.x 不同源） |
+| userscript `@version`（`extension.js` 标头）| `{{timestamp}}` | build 时自动填时间戳，非 semver，**不用手动改** |
+
+- **要 bump 版本**：直接改上面 manifest 的 `version` 字段即可。manifest 是**静态文件、不经过 build**，改完**不用重新编译**。
+- 习惯上 **chrome / safari 同步一个号**；**firefox 维持它自己的 1.x 线**（别强行对齐成 3.x，会打乱它和 Firefox 商店的版本连续性）。
+- 推回上游时「要不要 bump、版本号怎么定」交给上游决定，见 [UPSTREAM-PORT-CHECKLIST.md](../UPSTREAM-PORT-CHECKLIST.md) 第 7 节。
+
+## 7. 本地调试后端服务
 
 TODO。客户端默认连官方服务器 `https://2gether.video`（见 `vt.js` 里的 `video_together_host`）；自建后端的本地调试流程待补充。
