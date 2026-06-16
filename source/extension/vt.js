@@ -345,6 +345,7 @@
             if (c === 0 || c === "0" || c === false) return false;
             return false; // 在房間、無記憶 → 展開
         }
+        // 注意：呼叫端需將 VideoTogetherStorage.MinimiseDefault (PascalCase) 映射到此 minimiseDefault 欄位
         var d = state ? state.minimiseDefault : undefined;
         if (d === true) return true;
         if (d === false) return false;
