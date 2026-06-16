@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781614828
+// @version      1781615971
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -3990,7 +3990,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781614828';
+            this.version = '1781615971';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -4173,7 +4173,8 @@
                 this._liveToastShown = true;
                 this.UpdateStatusText("ライブを検出 — 各自で再生します", "", 5000);
             }
-            if (!isLive) this._liveToastShown = false;
+            // _liveToastShown 的重置改在 IsLiveStream（換影片/換頁時）與 exitRoom 處理。
+            // 不在這裡用「!isLive 就重置」，否則直播卡頓造成的偵測閃動會讓 toast 反覆跳。
             if (isLive !== this._ctxIsLive) {
                 this._ctxIsLive = isLive;
                 this.RefreshRoleText();
@@ -5192,6 +5193,8 @@
             this._liveToastShown = false;
             this._liveProbe = undefined;
             this._liveGrowHits = 0;
+            this._liveKey = undefined;      // 解除影片鎖存（IsLiveStream 會重新判斷）
+            this._liveLatched = false;
             this.setRole(this.RoleEnum.Null);
             window.videoTogetherFlyPannel.UpdateStatusText("", "");
             window.videoTogetherFlyPannel.InLobby();
@@ -5659,13 +5662,27 @@
         // YouTube 推回直播邊緣，來回震盪）。偵測到直播時，改為只同步播放/暫停、不碰 currentTime。
         IsLiveStream(videoDom) {
             try {
+                // 換影片/換頁就重置探測與鎖存：避免「直播→VOD（或反之）」沿用舊狀態誤判（含 codex 指出的
+                // 換台殘留）。key 取「頁面 URL + 影片來源」，YouTube 等 SPA 換片時 location.href（?v=）會變 → 自動重置。
+                const key = (typeof location !== "undefined" ? location.href : "")
+                    + "|" + ((videoDom && (videoDom.currentSrc || videoDom.src)) || "");
+                if (key !== this._liveKey) {
+                    this._liveKey = key;
+                    this._liveProbe = undefined;
+                    this._liveGrowHits = 0;
+                    this._liveLatched = false;
+                    this._liveToastShown = false; // 換到新影片 → 可再提示一次
+                }
+                // 已確認是直播就鎖住、穩定回 true：直播卡頓/緩衝時不會閃回「非直播」，
+                // 觀眾才不會在卡頓的那個 tick 又被房主 seek/暫停一下。換影片時上面的 key 變動會解除鎖存。
+                if (this._liveLatched) return true;
                 // 1) 通用·即時：duration 無限大/NaN（多數無 DVR 的 HLS/FLV 直播、YouTube 純直播）
-                if (videoDom && !isFinite(videoDom.duration)) return true;
+                if (videoDom && !isFinite(videoDom.duration)) { this._liveLatched = true; return true; }
                 // 2) 大平台·快速路徑：含 DVR（duration 有限且持續成長）的直播，用 DOM/host 瞬間判定最準
                 if (typeof document !== "undefined") {
                     const host = (typeof location !== "undefined" && location.hostname) || "";
-                    if (host === "live.bilibili.com" || host.endsWith(".live.bilibili.com")) return true; // B 站直播
-                    if (document.querySelector('.ytp-live-badge')) return true;                            // YouTube 直播徽章
+                    if (host === "live.bilibili.com" || host.endsWith(".live.bilibili.com")) { this._liveLatched = true; return true; } // B 站直播
+                    if (document.querySelector('.ytp-live-badge')) { this._liveLatched = true; return true; }                            // YouTube 直播徽章
                 }
                 // 3) 通用·啟發式（不需 per-site）：duration 隨真實時間持續成長 ⇒ 直播。
                 //    每 tick 取樣 (duration, 時間)，連續 2 次「以接近真實時間的速度成長」才判定，避免偶發抖動誤判 VOD。
@@ -5684,7 +5701,7 @@
                             this._liveGrowHits = 0; // 沒成長 → 視為 VOD
                         }
                         this._liveProbe = { d, t: now };
-                        if (this._liveGrowHits >= 2) return true;
+                        if (this._liveGrowHits >= 2) { this._liveLatched = true; return true; }
                     }
                 }
             } catch (_) { }
