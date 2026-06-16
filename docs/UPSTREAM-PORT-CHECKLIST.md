@@ -59,7 +59,7 @@
 
 - [ ] `handoff/`、`docs/superpowers/`、`docs/UPSTREAM-PORT-CHECKLIST.md`（本檔）、
       `CHANGES.md`（fork 自己的變更紀錄）、memory 等，都是 fork 內部用，PR 前排除。
-- [ ] **`docs/{en,zh-cn}/development.md`** 與 **`docs/{en,zh-cn}/settings-linkage.md`** 都是通用開發說明，**可以保留／一起貢獻**；只需把 `development.md` 內的 fork 專屬網址（`LCY000`、`lcy000.github.io`）換成上游（見 1b）。`settings-linkage.md` 已用上游名稱、無 fork 網址；`source/setting` 的開發安排本身是通用做法，不必拿掉。
+- [ ] **`docs/{en,zh-cn}/development.md`** 與 **`docs/{en,zh-cn}/settings-linkage.md`** 都是通用開發說明，**可以保留／一起貢獻**；只需把 `development.md` 內的 fork 專屬網址（`LCY000`、`lcy000.github.io`）換成上游（見 1b）。`settings-linkage.md` 已用上游名稱、無 fork 網址。
 - [ ] **`assets/icons/`**：fork 的圖示存檔（母檔 `vt.png`、圓角圖、favicon 備份），非擴充執行所需。上游若要圓角圖示，提供 `source/chrome/icon/` 的 `icon-*` 與 `vt_64x64`/灰即可，這個存檔資料夾可不帶。
 
 ## 6. 提交與品牌

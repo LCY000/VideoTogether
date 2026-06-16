@@ -145,7 +145,6 @@ let isDevelopment = false;   // 改成 true
 
 - **要 bump 版本**：直接改上面 manifest 的 `version` 字段即可。manifest 是**静态文件、不经过 build**，改完**不用重新编译**。
 - 习惯上 **chrome / safari 同步一个号**；**firefox 维持它自己的 1.x 线**（别强行对齐成 3.x，会打乱它和 Firefox 商店的版本连续性）。
-- 推回上游时「要不要 bump、版本号怎么定」交给上游决定，见 [UPSTREAM-PORT-CHECKLIST.md](../UPSTREAM-PORT-CHECKLIST.md) 第 7 节。
 
 ## 7. 本地调试后端服务
 

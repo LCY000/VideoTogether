@@ -145,7 +145,6 @@ The version lives in the **three browser manifests** (maintained per platform); 
 
 - **To bump**: just edit the manifest `version` field(s) above. Manifests are **static files, not processed by the build**, so **no rebuild needed**.
 - By convention **chrome / safari share one number**; **firefox keeps its own 1.x line** (don't force it to 3.x — that breaks its version continuity with the Firefox add-on store).
-- When porting upstream, whether/how to bump is left to upstream — see section 7 of [UPSTREAM-PORT-CHECKLIST.md](../UPSTREAM-PORT-CHECKLIST.md).
 
 ## 7. Local backend debugging
 
