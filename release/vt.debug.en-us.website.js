@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781696762
+// @version      1781697714
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -4074,7 +4074,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781696762';
+            this.version = '1781697714';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -6122,6 +6122,20 @@
         window.videoTogetherExtension = null;
         var extension = new VideoTogetherExtension();
         window.videoTogetherExtension = extension;
+        // 補設「換頁還原的人數凍結」：建構式內部(2273)的 RecoveryState→InRoom 會在這行 extension 指派『之前』
+        // 就還原房間並嘗試還原人數，那時 extension 還是 undefined → 守衛失敗、設不了 ctxMemberCount/_mcHoldUntil（只畫了 DOM）。
+        // 此處 extension 已就緒，若確實在房間且 sessionStorage 有近 10 秒的人數，補上凍結與基準值，
+        // 否則第一筆伺服器人數(常是 1)會因為沒有 hold 而把還原的數字洗掉（使用者回報的換頁後「2→1」）。
+        try {
+            if (extension.role != extension.RoleEnum.Null) {
+                let sMc = window.sessionStorage.getItem("VideoTogetherLastMemberCount");
+                let sT = parseFloat(window.sessionStorage.getItem("VideoTogetherLastMemberCountTime")) || 0;
+                if (sMc != null && sMc !== "" && Date.now() - sT < 10000) {
+                    extension.ctxMemberCount = sMc;
+                    extension._mcHoldUntil = sT + 10000;
+                }
+            }
+        } catch (e) { }
         sendMessageToSelf(MessageType.ExtensionInitSuccess, {})
     }
     try {
