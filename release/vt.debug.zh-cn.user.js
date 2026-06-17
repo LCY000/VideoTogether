@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781697714
+// @version      1781698896
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -19,6 +19,8 @@
     const vtRuntime = `extension`;
     // 設定頁網址（要改成自己部署的設定頁時，只改這一行即可）
     const VT_SETTING_PAGE_URL = "https://lcy000.github.io/VideoTogether-setting/v3.html";
+    // 換頁/跳轉後「人數凍結」時長：擋住換頁交接時伺服器因「同URL才算」造成的假性掉人數。改這一行即可調整。
+    const VT_MC_FREEZE_MS = 6000;
     const realUrlCache = {}
     const m3u8ContentCache = {}
 
@@ -3814,12 +3816,12 @@
                     lastMc = window.sessionStorage.getItem("VideoTogetherLastMemberCount");
                     lastTime = parseFloat(window.sessionStorage.getItem("VideoTogetherLastMemberCountTime")) || 0;
                 } catch (e) { }
-                let recent = (lastMc != null && lastMc !== "" && (Date.now() - lastTime < 10000));
+                let recent = (lastMc != null && lastMc !== "" && (Date.now() - lastTime < VT_MC_FREEZE_MS));
                 if (recent) {
                     // guard：InRoom 可能在 panel 建構期(經 Init→RecoveryState)被呼叫，那時 extension 還沒指派
                     if (typeof extension !== 'undefined' && extension) {
                         extension.ctxMemberCount = lastMc;
-                        extension._mcHoldUntil = lastTime + 10000;
+                        extension._mcHoldUntil = lastTime + VT_MC_FREEZE_MS;
                     }
                     updateInnnerHTML(mcEl, memberCountInner(lastMc));
                 } else {
@@ -4074,7 +4076,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781697714';
+            this.version = '1781698896';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -5423,7 +5425,7 @@
                         // 用換頁前的人數擋住「換頁延遲 + 伺服器同URL才算」造成的暫時掉到 1 人。
                         let _curUrl = this.linkWithoutState(window.location);
                         if (this._lastHostUrl !== undefined && this._lastHostUrl !== _curUrl) {
-                            this._mcHoldUntil = Date.now() + 10000;
+                            this._mcHoldUntil = Date.now() + VT_MC_FREEZE_MS;
                         }
                         this._lastHostUrl = _curUrl;
                         if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
@@ -5473,7 +5475,7 @@
                         if (newUrl != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
                             // 觀眾即將跟隨房主跳到新頁：先啟動人數凍結，擋住「跳轉前一刻」伺服器因房主已換 URL 而回報的
                             // 假性掉人數（changeMemberCount 在凍結期內會擋掉比目前低的值），讓好的人數撐到新頁（與房主 _lastHostUrl 那段同款）。
-                            this._mcHoldUntil = Date.now() + 10000;
+                            this._mcHoldUntil = Date.now() + VT_MC_FREEZE_MS;
                             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                                 let state = this.GetRoomState(newUrl);
                                 sendMessageToTop(MessageType.SetTabStorage, state);
@@ -5876,16 +5878,22 @@
                 if (waitForLoadding && !paused && !Var.isThisMemberLoading) {
                     paused = true;
                 }
+                // 防呆：同步目標明顯超過本影片長度時不要硬 seek。多半是「從直播/別支影片殘留的大 currentTime」
+                //（直播 DVR 位置可達數千秒）。硬 seek 會被瀏覽器夾到結尾、且每個 tick 反覆把觀眾與房主的調整都拉回結尾
+                //（使用者回報：從直播被帶到一般影片後卡在結尾）。等房主回報落在片長內的合理值再同步。
+                let _vtDur = videoDom.duration;
+                let _vtBeyond = (t) => (isFinite(_vtDur) && _vtDur > 0 && Number(t) > _vtDur + 1.5);
                 if (paused == false) {
                     videoDom.videoTogetherPaused = false;
-                    if (Math.abs(videoDom.currentTime - this.CalculateRealCurrent(room)) > 1) {
-                        videoDom.currentTime = this.CalculateRealCurrent(room);
+                    let _target = this.CalculateRealCurrent(room);
+                    if (!_vtBeyond(_target) && Math.abs(videoDom.currentTime - _target) > 1) {
+                        videoDom.currentTime = _target;
                     }
                     // play fail will return so here is safe
                     this.memberLastSeek = videoDom.currentTime;
                 } else {
                     videoDom.videoTogetherPaused = true;
-                    if (Math.abs(videoDom.currentTime - room["currentTime"]) > 0.1) {
+                    if (!_vtBeyond(room["currentTime"]) && Math.abs(videoDom.currentTime - room["currentTime"]) > 0.1) {
                         videoDom.currentTime = room["currentTime"];
                     }
                 }
@@ -6130,9 +6138,9 @@
             if (extension.role != extension.RoleEnum.Null) {
                 let sMc = window.sessionStorage.getItem("VideoTogetherLastMemberCount");
                 let sT = parseFloat(window.sessionStorage.getItem("VideoTogetherLastMemberCountTime")) || 0;
-                if (sMc != null && sMc !== "" && Date.now() - sT < 10000) {
+                if (sMc != null && sMc !== "" && Date.now() - sT < VT_MC_FREEZE_MS) {
                     extension.ctxMemberCount = sMc;
-                    extension._mcHoldUntil = sT + 10000;
+                    extension._mcHoldUntil = sT + VT_MC_FREEZE_MS;
                 }
             }
         } catch (e) { }
