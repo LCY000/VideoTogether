@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781705638
+// @version      1781707077
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -4107,7 +4107,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781705638';
+            this.version = '1781707077';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -5553,6 +5553,9 @@
                         }
                         let video = this.GetVideoDom();
                         if (video == undefined) {
+                            // 無影片頁(選單/搜尋/首頁)也要送成員心跳登記在房——否則伺服器只算到房主、人數掉到 1。
+                            // 每個 sync tick(約 2 秒)都會經過這裡，與有影片時同頻率持續回報，不會被伺服器當過期踢除。
+                            sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: false });
                             throw new Error("尚未检测到可同步的视频");
                         } else {
                             sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName, password: this.password, room: room })
