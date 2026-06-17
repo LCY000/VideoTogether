@@ -1308,8 +1308,21 @@
 
             this.isMain = (window.self == window.top);
             setInterval(() => {
-                if (getEnableMiniBar() && getEnableTextMessage() && document.fullscreenElement != undefined
-                    && (extension.ctxRole == extension.RoleEnum.Master || extension.ctxRole == extension.RoleEnum.Member)) {
+                const _miniShouldShow = getEnableMiniBar() && getEnableTextMessage() && document.fullscreenElement != undefined
+                    && (extension.ctxRole == extension.RoleEnum.Master || extension.ctxRole == extension.RoleEnum.Member);
+                if (!_miniShouldShow) {
+                    // 修 bug：退房(ctxRole→Null)／離開全螢幕／關閉設定後，主動移除已注入的全螢幕小窗，
+                    // 否則它只會停止更新、卻殘留在畫面上顯示舊人數與聊天框（使用者回報退房後小窗還在）。
+                    try {
+                        if (this.fullscreenSWrapper) {
+                            this.fullscreenSWrapper.remove();
+                            this.fullscreenSWrapper = undefined;
+                            this.fullscreenWrapper = undefined;
+                        }
+                    } catch (e) { }
+                    return;
+                }
+                if (_miniShouldShow) {
                     const qs = (s) => this.fullscreenWrapper.querySelector(s);
                     try {
                         qs("#memberCount").innerText = extension.ctxMemberCount;
@@ -3566,6 +3579,9 @@
                             }
                         }
                         if (newUrl != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
+                            // 觀眾即將跟隨房主跳到新頁：先啟動人數凍結，擋住「跳轉前一刻」伺服器因房主已換 URL 而回報的
+                            // 假性掉人數（changeMemberCount 在凍結期內會擋掉比目前低的值），讓好的人數撐到新頁（與房主 _lastHostUrl 那段同款）。
+                            this._mcHoldUntil = Date.now() + 10000;
                             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                                 let state = this.GetRoomState(newUrl);
                                 sendMessageToTop(MessageType.SetTabStorage, state);

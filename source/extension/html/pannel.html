@@ -824,6 +824,13 @@
     display: block;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22);
     cursor: pointer;
+    /* 平時半透明、較不擾眼；滑鼠移上去恢復清晰 */
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+  }
+
+  #videoTogetherSamllIcon:hover #videoTogetherMaximize {
+    opacity: 1;
   }
 
   .vt-field {
