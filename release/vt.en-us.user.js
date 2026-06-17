@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781701169
+// @version      1781705638
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -554,7 +554,9 @@
             lastRunQueue.shift();
         }
         if (lastRunQueue.length > timeLimitation) {
-            console.error("limited")
+            // 事件風暴(如 YT 廣告/緩衝/換畫質 狂噴 play/pause/seeked)時的正常節流，非錯誤——
+            // 同步仍由每 2 秒的 ScheduledTask 固定跑，這裡只是擋掉冗餘的即時催同步；故降為 debug，不汙染 console「錯誤」。
+            console.debug("limited")
             return true;
         }
         lastRunQueue.push(Date.now() / 1000);
@@ -4105,7 +4107,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781701169';
+            this.version = '1781705638';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -4299,22 +4301,28 @@
         // 房主被別人用「同房名 + 密碼」按『創建房間』接手時，伺服器會對原房主的更新回 "Other Host Is Syncing"。
         // 朋友間換房主的情境：自動把原房主降為觀眾並開始跟隨新房主（之後的 tick 走 Member 分支會自動跟播/跳轉）。
         // 回傳 true 代表「已處理（已降級）」，呼叫端就不要再把它當紅字錯誤顯示。
-        // 房主切到「新的同步影片」時，於狀態列提醒等觀眾載入（用 holdMs 停留約 5 秒、不被例行狀態洗掉）。
-        // 只在真正同步的影片 id 改變、且穩定 1.5s 時才提（避免瀏覽/預覽/搜尋時亂跳），且房內不只自己一人。
-        MaybeRemindViewersLoading(vid) {
+        // 房主切到「新影片(URL 改變)」且頁面有影片時，於狀態列提醒等觀眾載入（顯示約 5.5 秒、不被例行狀態洗掉）。
+        // 判定窗 = 凍結時長 VT_MC_FREEZE_MS(6s)：切片後在該窗內、且穩定 1.5s 後人數仍 >1 才提；逾窗或只剩自己 → 安靜放棄（避免瀏覽/預覽亂跳）。
+        MaybeRemindViewersLoading() {
             try {
                 const now = Date.now();
-                if (vid !== this._vtSyncedVid) {
-                    // 切換到新的同步影片。人數已由 sessionStorage 在換頁時還原，切換當下即為正確值，
-                    // 故直接依當下人數判斷：只有自己 → 視為已提醒（不提）。
-                    this._vtSyncedVid = vid;
+                // 「有影片」由呼叫端保證(只在偵測到影片的分支呼叫)。用 URL 變化判定「切到新影片/新集」——
+                // 比 video.id(綁 DOM 元素、SPA 換 src 時不變) 可靠；換片 → 重置判定窗。
+                const url = this.linkWithoutState(window.location);
+                if (url !== this._vtRemindUrl) {
+                    this._vtRemindUrl = url;
                     this._vtSyncedSince = now;
-                    this._vtViewersReminded = !(this.ctxMemberCount > 1);
+                    this._vtViewersReminded = false;
                     return;
                 }
                 if (this._vtViewersReminded) return;
-                if (now - (this._vtSyncedSince || 0) < 1500) return; // 防抖：穩定 1.5s（避免瀏覽/預覽/搜尋亂跳）
-                if (!(this.ctxMemberCount > 1)) return;              // 只有自己 → 不提
+                const age = now - (this._vtSyncedSince || 0);
+                if (age < 1500) return;                  // 防抖：穩定 1.5s（避免瀏覽/預覽/搜尋亂跳）
+                if (age > VT_MC_FREEZE_MS) {             // 判定窗 6 秒到 → 獨看，安靜放棄
+                    this._vtViewersReminded = true;
+                    return;
+                }
+                if (!(this.ctxMemberCount > 1)) return;  // 只有自己 → 不提
                 this._vtViewersReminded = true;
                 this.UpdateStatusText("Give viewers ~5s to load", "", 5500);
             } catch (_) { }
@@ -5475,7 +5483,7 @@
                                 this.getLocalTimestamp());
                             throw new Error("No syncable video detected yet");
                         } else {
-                            this.MaybeRemindViewersLoading(video.id);
+                            this.MaybeRemindViewersLoading();
                             sendMessageToTop(MessageType.SyncMasterVideo, {
                                 waitForLoadding: this.waitForLoadding,
                                 video: video,
