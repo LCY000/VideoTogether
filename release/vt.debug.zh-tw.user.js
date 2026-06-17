@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781707077
+// @version      1781737470
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -824,12 +824,9 @@
         // 沒有可凍結的舊值（剛進房/第一筆）時不擋，照伺服器正常顯示 → 不會卡空白。
         let held = extension._mcHoldUntil && now < extension._mcHoldUntil;
         let prev = parseInt(extension.ctxMemberCount);
-        try { console.log("[VT-MC] recv c=" + c + " prev=" + extension.ctxMemberCount + " held=" + (!!held) + " holdLeftMs=" + (extension._mcHoldUntil ? (extension._mcHoldUntil - now) : 0) + " role=" + extension.role); } catch (e) { }
         if (held && !isNaN(prev) && Number(c) < prev) {
-            try { console.log("[VT-MC] SUPPRESS drop, keep " + prev + " (server said " + c + ")"); } catch (e) { }
             return;
         }
-        try { console.log("[VT-MC] ACCEPT " + c + (held ? " (held but not lower)" : " (no hold)")); } catch (e) { }
         extension.ctxMemberCount = c;
         // 記住「目前人數＋時間」，作為下次換頁要帶過去的『跳轉前人數』（同網域整頁重整也能還原；逾 10 秒視為過期）
         try {
@@ -3847,7 +3844,6 @@
                     } catch (e) { }
                 }
                 let recent = (lastMc != null && lastMc !== "" && (Date.now() - lastTime < VT_MC_CARRY_MAX_AGE_MS));
-                try { console.log("[VT-MC] InRoom restore: lastMc=" + lastMc + " ageMs=" + (lastTime ? (Date.now() - lastTime) : "n/a") + " recent=" + recent + " extReady=" + (typeof extension !== 'undefined' && !!extension)); } catch (e) { }
                 if (recent) {
                     // guard：InRoom 可能在 panel 建構期(經 Init→RecoveryState)被呼叫，那時 extension 還沒指派
                     if (typeof extension !== 'undefined' && extension) {
@@ -4107,7 +4103,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781707077';
+            this.version = '1781737470';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -5463,7 +5459,6 @@
                         let _curUrl = this.linkWithoutState(window.location);
                         if (this._lastHostUrl !== undefined && this._lastHostUrl !== _curUrl) {
                             this._mcHoldUntil = Date.now() + VT_MC_FREEZE_MS;
-                            try { console.log("[VT-MC] HOST url changed -> freeze " + VT_MC_FREEZE_MS + "ms, keep " + this.ctxMemberCount); } catch (e) { }
                         }
                         this._lastHostUrl = _curUrl;
                         if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
@@ -5514,7 +5509,6 @@
                             // 觀眾即將跟隨房主跳到新頁：先啟動人數凍結，擋住「跳轉前一刻」伺服器因房主已換 URL 而回報的
                             // 假性掉人數（changeMemberCount 在凍結期內會擋掉比目前低的值），讓好的人數撐到新頁（與房主 _lastHostUrl 那段同款）。
                             this._mcHoldUntil = Date.now() + VT_MC_FREEZE_MS;
-                            try { console.log("[VT-MC] VIEWER will jump (room url=" + newUrl + " != mine=" + this.url + ") -> freeze " + VT_MC_FREEZE_MS + "ms, keep " + this.ctxMemberCount); } catch (e) { }
                             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                                 let state = this.GetRoomState(newUrl);
                                 sendMessageToTop(MessageType.SetTabStorage, state);
@@ -5916,13 +5910,6 @@
             // 仍會跟著房主「換台(URL)」，那段在外層 Member tick 處理、不受這裡影響。一般影片走原本同步。
             let isLive = this.IsLiveStream(videoDom);
             this.SetLiveContext(isLive);
-            try {
-                let _ct = videoDom.currentTime, _dur = videoDom.duration, _rc = room["currentTime"], _rt = this.CalculateRealCurrent(room);
-                console.log("[VT-LIVE] isLive=" + isLive + " roomPaused=" + room['paused'] + " wait=" + waitForLoadding + " meLoading=" + Var.isThisMemberLoading
-                    + " | cur=" + (typeof _ct === 'number' ? _ct.toFixed(1) : _ct) + " dur=" + _dur + " roomCT=" + _rc
-                    + " target=" + (isFinite(_rt) ? _rt.toFixed(1) : _rt) + " beyondDur=" + (isFinite(_dur) && _dur > 0 && Number(_rt) > _dur + 1.5)
-                    + " vidPaused=" + videoDom.paused + " url=" + location.href);
-            } catch (e) { }
             if (isLive) {
                 videoDom.videoTogetherPaused = false; // 直播不由 VT 控制播放
                 this.memberLastSeek = videoDom.currentTime;
@@ -6193,9 +6180,7 @@
                 if (sMc != null && sMc !== "" && Date.now() - sT < VT_MC_CARRY_MAX_AGE_MS) {
                     extension.ctxMemberCount = sMc;
                     extension._mcHoldUntil = Date.now() + VT_MC_FREEZE_MS; // 從還原當下起算 6 秒
-                    try { console.log("[VT-MC] bridge: restored count " + sMc + " (ageMs=" + (Date.now() - sT) + ") + freeze, role=" + extension.role); } catch (e) { }
                 } else {
-                    try { console.log("[VT-MC] bridge: nothing to restore (sMc=" + sMc + ", role=" + extension.role + ")"); } catch (e) { }
                 }
             }
         } catch (e) { }
