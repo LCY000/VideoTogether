@@ -4023,6 +4023,13 @@
             // 仍會跟著房主「換台(URL)」，那段在外層 Member tick 處理、不受這裡影響。一般影片走原本同步。
             let isLive = this.IsLiveStream(videoDom);
             this.SetLiveContext(isLive);
+            try {
+                let _ct = videoDom.currentTime, _dur = videoDom.duration, _rc = room["currentTime"], _rt = this.CalculateRealCurrent(room);
+                console.log("[VT-LIVE] isLive=" + isLive + " roomPaused=" + room['paused'] + " wait=" + waitForLoadding + " meLoading=" + Var.isThisMemberLoading
+                    + " | cur=" + (typeof _ct === 'number' ? _ct.toFixed(1) : _ct) + " dur=" + _dur + " roomCT=" + _rc
+                    + " target=" + (isFinite(_rt) ? _rt.toFixed(1) : _rt) + " beyondDur=" + (isFinite(_dur) && _dur > 0 && Number(_rt) > _dur + 1.5)
+                    + " vidPaused=" + videoDom.paused + " url=" + location.href);
+            } catch (e) { }
             if (isLive) {
                 videoDom.videoTogetherPaused = false; // 直播不由 VT 控制播放
                 this.memberLastSeek = videoDom.currentTime;
