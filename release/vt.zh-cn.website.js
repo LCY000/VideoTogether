@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781699004
+// @version      1781699715
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -60,9 +60,21 @@
     }
 
     let trustedPolicy = undefined;
+    // YouTube 等「強制 Trusted Types」的頁面：提前建立 policy，讓第一次就走 policy，
+    // 不會先試 raw innerHTML 而觸發 CSP 違規（console 噴 "requires 'TrustedHTML' assignment"）。
+    // 非強制 TT 的頁面 trustedTypes 不存在或不限名稱，createPolicy 失敗也無妨（維持 raw innerHTML）。
+    try {
+        if (typeof trustedTypes !== 'undefined' && trustedTypes.createPolicy) {
+            trustedPolicy = trustedTypes.createPolicy('videoTogetherExtensionVtJsPolicy', {
+                createHTML: (string) => string,
+                createScript: (string) => string,
+                createScriptURL: (url) => url
+            });
+        }
+    } catch (e) { }
     function updateInnnerHTML(e, html) {
         try {
-            // 已建立過 Trusted Types policy（如 YouTube 強制）就直接用，避免每次都先丟一次 raw innerHTML 而噴 console 錯誤
+            // 已建立 Trusted Types policy（如 YouTube 強制）就直接用，避免先丟 raw innerHTML 而噴 console 錯誤
             e.innerHTML = trustedPolicy ? trustedPolicy.createHTML(html) : html;
         } catch {
             if (trustedPolicy == undefined) {
@@ -4086,7 +4098,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781699004';
+            this.version = '1781699715';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
