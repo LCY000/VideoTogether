@@ -1458,7 +1458,9 @@
                     }
                 };
                 window.addEventListener("resize", autoCollapse);
-                autoCollapse();
+                // 不在載入時主動呼叫 autoCollapse()：初始收/展由 Init（一律先收合）＋ firstSync 決定。
+                // 早期呼叫（在元素參考指派前、this.minimized 仍為初始 false）只會把 autoMinimized 誤設成 true，
+                // 導致之後視窗放大時把「本該收合」的面板誤展開（codex 指出）。autoCollapse 只當 resize 處理器用。
                 ["", "webkit"].forEach(prefix => {
                     document.addEventListener(prefix + "fullscreenchange", (event) => {
                         if (document.fullscreenElement || document.webkitFullscreenElement) {

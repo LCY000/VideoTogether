@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://videotogether.github.io/
-// @version      1781641958
+// @version      1781694447
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -32,7 +32,7 @@
         return;
     }
 
-    let version = '1781641958'
+    let version = '1781694447'
     let type = 'Firefox'
     function getBrowser() {
         switch (type) {
@@ -524,8 +524,9 @@
     (document.body || document.documentElement).appendChild(wrapper);
     // 開機 splash「loading ...」的顯示策略：
     //  ‑ 擴充版(isExtension)：vt.js 本機載入、幾乎瞬間，splash 沒意義 → 完全不顯示。
-    //  ‑ 網路版(userscript/website)：vt.js 從 CDN 抓、可能慢 → 主頁框延遲 800ms 才注入，且 vt.js 已建立
-    //    #VideoTogetherWrapper 就不注入（避免快速載入時閃一下）；子框維持立即。vt.js 啟動後既有 remove() 仍會收掉。
+    //  ‑ 網路版(userscript/website)：vt.js 從 CDN 抓、可能慢 → 只在最上層頁框延遲 800ms 才注入，
+    //    且 vt.js 已建立 #VideoTogetherWrapper 就不注入（避免快速載入閃一下）。iframe 子框沒有主面板、
+    //    splash 無意義且移除碼不在該框執行會變孤兒 → 不注入。vt.js 啟動後既有 remove() 仍會收掉。
     function injectVtLoading() {
         wrapper.innerHTML = `<div id="videoTogetherLoading">
     <div id="videoTogetherLoadingwrap">
@@ -572,14 +573,10 @@
 </style>
 `;
     }
-    if (!isExtension) {
-        if (window.self === window.top) {
-            setTimeout(() => {
-                try { if (!document.querySelector("#VideoTogetherWrapper")) injectVtLoading(); } catch (e) { }
-            }, 800);
-        } else {
-            injectVtLoading();
-        }
+    if (!isExtension && window.self === window.top) {
+        setTimeout(() => {
+            try { if (!document.querySelector("#VideoTogetherWrapper")) injectVtLoading(); } catch (e) { }
+        }, 800);
     }
     let script = document.createElement('script');
     script.type = 'text/javascript';
