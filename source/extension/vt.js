@@ -1934,6 +1934,16 @@
                     lastMc = window.sessionStorage.getItem("VideoTogetherLastMemberCount");
                     lastTime = parseFloat(window.sessionStorage.getItem("VideoTogetherLastMemberCountTime")) || 0;
                 } catch (e) { }
+                // 同網域 sessionStorage 沒有(多半是跨網域換頁遺失)→ 退而讀 TabStorage（跟著房間跨網域帶過來的）
+                if (lastMc == null || lastMc === "") {
+                    try {
+                        let ts = window.VideoTogetherStorage && window.VideoTogetherStorage.VideoTogetherTabStorage;
+                        if (ts && ts.VideoTogetherLastMemberCount != null && ts.VideoTogetherLastMemberCount !== "") {
+                            lastMc = ts.VideoTogetherLastMemberCount;
+                            lastTime = parseFloat(ts.VideoTogetherLastMemberCountTime) || 0;
+                        }
+                    } catch (e) { }
+                }
                 let recent = (lastMc != null && lastMc !== "" && (Date.now() - lastTime < VT_MC_FREEZE_MS));
                 if (recent) {
                     // guard：InRoom 可能在 panel 建構期(經 Init→RecoveryState)被呼叫，那時 extension 還沒指派
@@ -3835,7 +3845,10 @@
                 VideoVolume: this.getVideoVolume(),
                 VoiceVolume: this.getVoiceVolume(),
                 // 收/展跟著房間會話跨頁繼承（每個用戶端各自的；刻意不放 URL，避免傳染給觀眾）
-                VideoTogetherMinimized: (window.videoTogetherFlyPannel && window.videoTogetherFlyPannel.minimized) ? 1 : 0
+                VideoTogetherMinimized: (window.videoTogetherFlyPannel && window.videoTogetherFlyPannel.minimized) ? 1 : 0,
+                // 人數跨網域帶過去（TabStorage 通道）：換到別網站時 sessionStorage 會遺失，靠這個讓新頁也能還原並啟動凍結
+                VideoTogetherLastMemberCount: this.ctxMemberCount,
+                VideoTogetherLastMemberCountTime: Date.now()
             }
         }
 
