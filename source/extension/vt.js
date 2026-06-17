@@ -19,8 +19,11 @@
     const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
     // 設定頁網址（要改成自己部署的設定頁時，只改這一行即可）
     const VT_SETTING_PAGE_URL = "https://lcy000.github.io/VideoTogether-setting/v3.html";
-    // 換頁/跳轉後「人數凍結」時長：擋住換頁交接時伺服器因「同URL才算」造成的假性掉人數。改這一行即可調整。
+    // 換頁/跳轉後「人數凍結」時長：還原舊人數後，這段時間內擋掉伺服器的假性掉人數。改這一行即可調整。
     const VT_MC_FREEZE_MS = 6000;
+    // 「換頁帶過去的人數」最多多舊還願意還原：要涵蓋換頁載入空檔（YT 等重站可達 6~7 秒以上），
+    // 與凍結時長是兩回事——這個只決定「值不值得還原」，還原後仍只凍結 VT_MC_FREEZE_MS。
+    const VT_MC_CARRY_MAX_AGE_MS = 15000;
     const realUrlCache = {}
     const m3u8ContentCache = {}
 
@@ -1959,13 +1962,13 @@
                         }
                     } catch (e) { }
                 }
-                let recent = (lastMc != null && lastMc !== "" && (Date.now() - lastTime < VT_MC_FREEZE_MS));
+                let recent = (lastMc != null && lastMc !== "" && (Date.now() - lastTime < VT_MC_CARRY_MAX_AGE_MS));
                 try { console.log("[VT-MC] InRoom restore: lastMc=" + lastMc + " ageMs=" + (lastTime ? (Date.now() - lastTime) : "n/a") + " recent=" + recent + " extReady=" + (typeof extension !== 'undefined' && !!extension)); } catch (e) { }
                 if (recent) {
                     // guard：InRoom 可能在 panel 建構期(經 Init→RecoveryState)被呼叫，那時 extension 還沒指派
                     if (typeof extension !== 'undefined' && extension) {
                         extension.ctxMemberCount = lastMc;
-                        extension._mcHoldUntil = lastTime + VT_MC_FREEZE_MS;
+                        extension._mcHoldUntil = Date.now() + VT_MC_FREEZE_MS; // 從還原當下起算 6 秒，不錨舊時間（舊時間可能已過期）
                     }
                     updateInnnerHTML(mcEl, memberCountInner(lastMc));
                 } else {
@@ -4287,9 +4290,9 @@
             if (extension.role != extension.RoleEnum.Null) {
                 let sMc = window.sessionStorage.getItem("VideoTogetherLastMemberCount");
                 let sT = parseFloat(window.sessionStorage.getItem("VideoTogetherLastMemberCountTime")) || 0;
-                if (sMc != null && sMc !== "" && Date.now() - sT < VT_MC_FREEZE_MS) {
+                if (sMc != null && sMc !== "" && Date.now() - sT < VT_MC_CARRY_MAX_AGE_MS) {
                     extension.ctxMemberCount = sMc;
-                    extension._mcHoldUntil = sT + VT_MC_FREEZE_MS;
+                    extension._mcHoldUntil = Date.now() + VT_MC_FREEZE_MS; // 從還原當下起算 6 秒
                     try { console.log("[VT-MC] bridge: restored count " + sMc + " (ageMs=" + (Date.now() - sT) + ") + freeze, role=" + extension.role); } catch (e) { }
                 } else {
                     try { console.log("[VT-MC] bridge: nothing to restore (sMc=" + sMc + ", role=" + extension.role + ")"); } catch (e) { }
