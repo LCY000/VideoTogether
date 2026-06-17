@@ -1971,11 +1971,15 @@
             // 用 this.wrapper（建構期 window.videoTogetherFlyPannel 尚未指派，不能用 select()）清空人數 + 收起房內元素
             let mc = this.wrapper.querySelector('#memberCount');
             if (mc) updateInnnerHTML(mc, '');
-            // 離開房間清掉記住的人數＋凍結狀態，避免下次進別的房先閃舊值或誤觸換頁凍結
-            try {
-                window.sessionStorage.removeItem("VideoTogetherLastMemberCount");
-                window.sessionStorage.removeItem("VideoTogetherLastMemberCountTime");
-            } catch (e) { }
+            // 只有「真正退房」(init=false)才清掉記住的人數，避免下次進別的房先閃舊值。
+            // ⚠️ 不可在建構期的 InLobby(true) 清：那會在「換頁還原房間」之前就把要跨頁帶過去的人數刪掉，
+            //    導致新頁人數從頭重載、凍結失效（使用者回報換頁後人數沒紀錄）。
+            if (!init) {
+                try {
+                    window.sessionStorage.removeItem("VideoTogetherLastMemberCount");
+                    window.sessionStorage.removeItem("VideoTogetherLastMemberCountTime");
+                } catch (e) { }
+            }
             // ⚠️ extension（VideoTogetherExtension 實例）在 panel 建構之後才指派；InLobby(true) 會在
             //   panel 建構期就被呼叫，那時 extension 還是 undefined。必須 guard，否則建構丟例外 → panel=null → 全部按鈕失效。
             if (typeof extension !== 'undefined' && extension) {
@@ -3405,6 +3409,12 @@
             this._liveState = false;
             this._liveOffStreak = 0;
             this.setRole(this.RoleEnum.Null);
+            // 同步把 ctxRole 也歸 Null：否則它要等下次 sendMessageToSonWithContext 才更新，
+            // 期間全螢幕小窗的顯示條件(讀 ctxRole)仍成立 → 退房後小窗不會被移除（使用者回報的殘留）。
+            this.ctxRole = this.RoleEnum.Null;
+            // 先解除狀態文字的 hold 再清：直播提示「偵測到直播，改為各自控制」是帶 5 秒 hold 的 toast，
+            // 不先歸零 _statusHoldUntil，下面的空字串清除會被 UpdateStatusText 的 hold 擋掉 → 提示殘留在大廳。
+            try { window.videoTogetherFlyPannel._statusHoldUntil = 0; } catch (e) { }
             window.videoTogetherFlyPannel.UpdateStatusText("", "");
             window.videoTogetherFlyPannel.InLobby();
             let state = this.GetRoomState("");
