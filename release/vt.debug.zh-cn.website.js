@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781792436
+// @version      1781795899
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1741,7 +1741,9 @@
                 this.fsIdleEl = undefined; this.fsIdleHandler = undefined;
             };
             setInterval(() => {
-                const _miniShouldShow = getEnableMiniBar() && getEnableTextMessage() && document.fullscreenElement != undefined
+                // 小窗(人數)由 EnableMiniBar 決定要不要顯示；聊天(輸入框等)另由 EnableTextMessage 控制(見下方建立小窗處)。
+                // 解耦：關掉文字訊息時仍保留人數小窗，不再整個不顯示。
+                const _miniShouldShow = getEnableMiniBar() && document.fullscreenElement != undefined
                     && (extension.ctxRole == extension.RoleEnum.Master || extension.ctxRole == extension.RoleEnum.Member);
                 if (_miniShouldShow) {
                     const qs = (s) => this.fullscreenWrapper.querySelector(s);
@@ -1945,6 +1947,13 @@
                     let msgInput = wrapper.getElementById('text-input');
                     let sendBtn = wrapper.getElementById('send-button');
                     let closeBtn = wrapper.getElementById('close-btn');
+                    // 文字訊息關閉：收掉聊天(箭頭/輸入框/送出)，只留人數膠囊＋✕。建立小窗時決定即可——
+                    // 改設定要開設定頁、通常會先離開全螢幕，回來再進全螢幕時小窗會重建並套用最新設定。
+                    if (!getEnableTextMessage()) {
+                        if (expandBtn) expandBtn.style.display = 'none';
+                        if (msgInput) msgInput.style.display = 'none';
+                        if (sendBtn) sendBtn.style.display = 'none';
+                    }
                     let expanded = true;
                     function expand() {
                         if (expanded) {
@@ -4104,7 +4113,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781792436';
+            this.version = '1781795899';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
