@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781737470
+// @version      1781792436
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -818,9 +818,11 @@
     function changeMemberCount(c) {
         // 退出房間時 exitRoom() 會先 setRole(Null)，飛行中的 tick 事後回來就不會把人數重畫進大廳。
         if (extension.role === extension.RoleEnum.Null) return;
+        // 防呆：只接受數字（含數字字串與 0）。非數字/undefined 不採用，避免把 ctxMemberCount 設成壞值 → 顯示空白或 "undefined"。
+        if (c == null || isNaN(Number(c))) return;
         let now = Date.now();
-        // 換頁後最多凍結 10 秒：用「跳轉前的人數」擋住換頁延遲/伺服器「同URL才算」造成的暫時掉到 1 人。
-        // 凍結期內，伺服器回報「比目前低」就先不採用（等觀眾跟上）；持平或更高直接採用；超過 10 秒恢復照伺服器。
+        // 換頁後最多凍結 VT_MC_FREEZE_MS（目前 6 秒）：用「跳轉前的人數」擋住換頁延遲/伺服器「同URL才算」造成的暫時掉到 1 人。
+        // 凍結期內，伺服器回報「比目前低」就先不採用（等觀眾跟上）；持平或更高直接採用；逾凍結時長恢復照伺服器。
         // 沒有可凍結的舊值（剛進房/第一筆）時不擋，照伺服器正常顯示 → 不會卡空白。
         let held = extension._mcHoldUntil && now < extension._mcHoldUntil;
         let prev = parseInt(extension.ctxMemberCount);
@@ -1727,29 +1729,34 @@
             this.isInRoom = false;
 
             this.isMain = (window.self == window.top);
+            // 全螢幕小窗的「完整」移除：DOM + GotTxtMsgCallback + 舊全螢幕元素的 mousemove 監聽 + 閒置計時器。
+            // 退房／離開全螢幕／換全螢幕元素都共用它，避免清理路徑不一致而殘留監聽/計時器（codex 審查指出）。
+            const removeFullscreenMini = () => {
+                try { if (this.fullscreenSWrapper) this.fullscreenSWrapper.remove(); } catch (e) { }
+                this.fullscreenSWrapper = undefined;
+                this.fullscreenWrapper = undefined;
+                GotTxtMsgCallback = undefined;
+                try { if (this.fsIdleEl && this.fsIdleHandler) this.fsIdleEl.removeEventListener("mousemove", this.fsIdleHandler); } catch (e) { }
+                try { if (this.clearFsIdle) this.clearFsIdle(); } catch (e) { }
+                this.fsIdleEl = undefined; this.fsIdleHandler = undefined;
+            };
             setInterval(() => {
                 const _miniShouldShow = getEnableMiniBar() && getEnableTextMessage() && document.fullscreenElement != undefined
                     && (extension.ctxRole == extension.RoleEnum.Master || extension.ctxRole == extension.RoleEnum.Member);
-                if (!_miniShouldShow) {
-                    // 修 bug：退房(ctxRole→Null)／離開全螢幕／關閉設定後，主動移除已注入的全螢幕小窗，
-                    // 否則它只會停止更新、卻殘留在畫面上顯示舊人數與聊天框（使用者回報退房後小窗還在）。
-                    try {
-                        if (this.fullscreenSWrapper) {
-                            this.fullscreenSWrapper.remove();
-                            this.fullscreenSWrapper = undefined;
-                            this.fullscreenWrapper = undefined;
-                        }
-                    } catch (e) { }
-                    return;
-                }
                 if (_miniShouldShow) {
                     const qs = (s) => this.fullscreenWrapper.querySelector(s);
                     try {
-                        qs("#memberCount").innerText = extension.ctxMemberCount;
+                        // 防呆：ctxMemberCount 尚未讀到(undefined)/非數字時顯示空白，不要把 "undefined" 印到小窗
+                        const _mc = extension.ctxMemberCount;
+                        qs("#memberCount").innerText = (_mc == null || _mc === '' || isNaN(Number(_mc))) ? '' : _mc;
                         qs("#send-button").disabled = !extension.ctxWsIsOpen;
                     } catch { };
                     if (document.fullscreenElement.contains(this.fullscreenSWrapper)) {
                         return;
+                    }
+                    // 換了全螢幕元素時，舊 wrapper 還掛在已退出全螢幕的舊元素上 → 完整移除(含監聽/計時器)，避免殘留洩漏
+                    if (this.fullscreenSWrapper) {
+                        removeFullscreenMini();
                     }
                     let shadowWrapper = document.createElement("div");
                     this.fullscreenSWrapper = shadowWrapper;
@@ -2015,15 +2022,9 @@
                     this.clearFsIdle = () => { clearTimeout(vtIdleTimer); };
                     showBar();
                 } else {
-                    if (this.fullscreenSWrapper != undefined) {
-                        this.fullscreenSWrapper.remove();
-                        this.fullscreenSWrapper = undefined;
-                        this.fullscreenWrapper = undefined;
-                        GotTxtMsgCallback = undefined;
-                        try { if (this.fsIdleEl && this.fsIdleHandler) { this.fsIdleEl.removeEventListener("mousemove", this.fsIdleHandler); } } catch (e) { }
-                        try { if (this.clearFsIdle) { this.clearFsIdle(); } } catch (e) { }
-                        this.fsIdleEl = undefined; this.fsIdleHandler = undefined;
-                    }
+                    // 不顯示(退房 ctxRole→Null／離開全螢幕／關閉設定)：主動移除已注入的小窗(含監聽/計時器)，
+                    // 否則它只會停止更新、卻殘留在畫面上顯示舊人數與聊天框（使用者回報退房後小窗還在）。
+                    removeFullscreenMini();
                 }
             }, 500);
             if (this.isMain) {
@@ -4103,7 +4104,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781737470';
+            this.version = '1781792436';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -5325,6 +5326,13 @@
             this._liveKey = undefined;      // 解除遲滯狀態（IsLiveStream 會重新判斷）
             this._liveState = false;
             this._liveOffStreak = 0;
+            // 重置人數凍結與「等待觀眾載入」提醒狀態：避免快速退房再進(尤其同頁重進同房)時，
+            // 殘留的凍結擋掉新房第一筆人數、或提醒窗因 _vtRemindUrl 仍等於現 URL 而不再觸發。
+            this._mcHoldUntil = 0;
+            this.ctxMemberCount = undefined;
+            this._vtRemindUrl = undefined;
+            this._vtSyncedSince = 0;
+            this._vtViewersReminded = false;
             this.setRole(this.RoleEnum.Null);
             // 同步把 ctxRole 也歸 Null：否則它要等下次 sendMessageToSonWithContext 才更新，
             // 期間全螢幕小窗的顯示條件(讀 ctxRole)仍成立 → 退房後小窗不會被移除（使用者回報的殘留）。
