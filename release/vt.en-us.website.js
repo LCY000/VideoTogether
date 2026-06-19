@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1781795899
+// @version      1781897925
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1112,7 +1112,10 @@
                 m3u8ContentCache[data['data'].m3u8Url] = data['data'].content;
             }
             if (data['method'] == 'send_txtmsg' && getEnableTextMessage()) {
-                popupError("New Messages (<a id='changeVoiceBtn' style='color:inherit' href='#''>Change Voice</a>)");
+                // 「有新訊息(更換語音)」是語音相關提示——關閉語音播報時就不跳，訊息仍會進聊天
+                if (getEnableMessageVoice()) {
+                    popupError("New Messages (<a id='changeVoiceBtn' style='color:inherit' href='#''>Change Voice</a>)");
+                }
                 extension.gotTextMsg(data['data'].id, data['data'].msg, false, -1, data['data'].audioUrl);
                 sendMessageToTop(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
             }
@@ -4113,7 +4116,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1781795899';
+            this.version = '1781897925';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
