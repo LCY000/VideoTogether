@@ -711,7 +711,10 @@
                 m3u8ContentCache[data['data'].m3u8Url] = data['data'].content;
             }
             if (data['method'] == 'send_txtmsg' && getEnableTextMessage()) {
-                popupError("{$new_message_change_voice$}");
+                // 「有新訊息(更換語音)」是語音相關提示——關閉語音播報時就不跳，訊息仍會進聊天
+                if (getEnableMessageVoice()) {
+                    popupError("{$new_message_change_voice$}");
+                }
                 extension.gotTextMsg(data['data'].id, data['data'].msg, false, -1, data['data'].audioUrl);
                 sendMessageToTop(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
             }
